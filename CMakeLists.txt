@@ -26,7 +26,7 @@ include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/deps/pybind11/include)
 
 add_library(metapy SHARED src/metapy.cpp)
-target_link_libraries(metapy meta-index)
+target_link_libraries(metapy meta-index meta-ranker)
 
 # don't add a "lib" prefix to the metapy shared library
 set_target_properties(metapy PROPERTIES PREFIX "")

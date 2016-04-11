@@ -9,19 +9,21 @@
  */
 
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
 #include "cpptoml.h"
 #include "meta/index/inverted_index.h"
 #include "meta/index/make_index.h"
+#include "meta/index/ranker/all.h"
 
-// add conversion for hashing::probe_map
-// @see pybind11/stl.h
 namespace pybind11
 {
 namespace detail
 {
 
+// add conversion for hashing::probe_map
+// @see pybind11/stl.h
 template <class Type, class Key, class Value>
 struct probe_map_caster
 {
@@ -74,6 +76,46 @@ struct type_caster<meta::hashing::probe_map<Key, Value, ProbingStrategy, Hash,
                                                 Hash, KeyEqual, Traits>,
                        Key, Value>
 {
+};
+
+// add conversion for meta::index::search_result
+// see: pybind11/cast.h
+template <>
+struct type_caster<meta::index::search_result>
+    : type_caster<std::pair<meta::doc_id, float>>
+{
+    using type = meta::index::search_result;
+    using base = type_caster<std::pair<meta::doc_id, float>>;
+
+    using base::load;
+    using base::name;
+
+    static handle cast(const type& src, return_value_policy policy,
+                       handle parent)
+    {
+        object o1 = object(
+            type_caster<typename intrinsic_type<meta::doc_id>::type>::cast(
+                src.d_id, policy, parent),
+            false);
+        object o2
+            = object(type_caster<typename intrinsic_type<float>::type>::cast(
+                         src.score, policy, parent),
+                     false);
+        if (!o1 || !o2)
+            return handle();
+
+        tuple result(2);
+        PyTuple_SET_ITEM(result.ptr(), 0, o1.release().ptr());
+        PyTuple_SET_ITEM(result.ptr(), 1, o2.release().ptr());
+        return result.release();
+    }
+
+    operator type()
+    {
+        auto pr = static_cast<std::pair<meta::doc_id, float>>(*this);
+
+        return type{pr.first, pr.second};
+    }
 };
 }
 }
@@ -175,6 +217,28 @@ PYBIND11_PLUGIN(metapy)
               return index::make_index<index::inverted_index>(*config);
           },
           "Builds or loads an inverted index from disk");
+
+    py::class_<index::ranker>{m, "Ranker"}.def(
+        "score",
+        [](index::ranker& ranker, index::inverted_index& idx,
+           const corpus::document& query, uint64_t num_results,
+           const index::ranker::filter_function_type& filter)
+        {
+            return ranker.score(idx, query, num_results, filter);
+        },
+        "Scores the documents in the inverted index with respect to the query "
+        "using this ranker",
+        py::arg("idx"), py::arg("query"), py::arg("num_results") = 10,
+        py::arg("filter") = std::function<bool(doc_id)>([](doc_id)
+                                                        {
+                                                            return true;
+                                                        }));
+
+    py::class_<index::okapi_bm25>{m, "OkapiBM25", py::base<index::ranker>{}}
+        .def(py::init<float, float, float>(),
+             py::arg("k1") = index::okapi_bm25::default_k1,
+             py::arg("b") = index::okapi_bm25::default_b,
+             py::arg("k3") = index::okapi_bm25::default_k3);
 
     return m.ptr();
 }
