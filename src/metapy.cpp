@@ -220,6 +220,63 @@ PYBIND11_PLUGIN(metapy)
         .def("id", &corpus::document::id)
         .def("contains_content", &corpus::document::contains_content);
 
+    py::class_<corpus::metadata>{m_idx, "Metadata"}.def(
+        "get",
+        [](corpus::metadata& md, const std::string& name) -> py::object
+        {
+            using field_type = corpus::metadata::field_type;
+
+            py::object ret;
+            const auto& schema = md.schema();
+
+            // find the entry for this field name if it exists
+            for (uint64_t i = 0; i < schema.size(); ++i)
+            {
+                if (schema[i].name == name)
+                {
+                    switch (schema[i].type)
+                    {
+                        case field_type::SIGNED_INT:
+                        {
+                            auto val = md.get<int64_t>(name);
+                            if (val)
+                                return py::cast(*val);
+                            break;
+                        }
+
+                        case field_type::UNSIGNED_INT:
+                        {
+                            auto val = md.get<uint64_t>(name);
+                            if (val)
+                                return py::cast(*val);
+                            break;
+                        }
+
+                        case field_type::DOUBLE:
+                        {
+                            auto val = md.get<double>(name);
+                            if (val)
+                                return py::cast(*val);
+                            break;
+                        }
+
+                        case field_type::STRING:
+                        {
+                            auto val = md.get<std::string>(name);
+                            if (val)
+                                return py::cast(*val);
+                            break;
+                        }
+                    }
+
+                    return py::cast(nullptr);
+                }
+            }
+
+            return py::cast(nullptr);
+        },
+        "Returns the metadata value for a given field name");
+
     py::class_<index::disk_index>{m_idx, "DiskIndex"}
         .def("index_name", &index::disk_index::index_name)
         .def("num_docs", &index::disk_index::num_docs)
@@ -232,6 +289,8 @@ PYBIND11_PLUGIN(metapy)
         .def("class_label_from_id", &index::disk_index::class_label_from_id)
         .def("num_labels", &index::disk_index::num_labels)
         .def("class_labels", &index::disk_index::class_labels)
+        .def("metadata", &index::disk_index::metadata,
+             "Extract the metadata for a document", py::keep_alive<0, 1>())
         .def("unique_terms",
              [](const index::disk_index& idx)
              {
