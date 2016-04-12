@@ -12,7 +12,7 @@ class PL2Ranker(metapy.index.Ranker):
     """
     Create a new ranking function in Python that can be used in MeTA
     """
-    def __init__(self, c_param):
+    def __init__(self, c_param=0.5):
         self.c = c_param
         super(PL2Ranker, self).__init__()
 
@@ -40,12 +40,12 @@ if __name__ == '__main__':
     query_num = int(sys.argv[3])
     start_time = time.time()
     with open(query_path) as query_file:
-        okapi = metapy.index.OkapiBM25()
+        pl2 = PL2Ranker()
         for line in query_file:
             query = metapy.index.Document()
             query.content(line.strip())
             res_num = 1
-            for doc in okapi.score(idx, query, 1000):
+            for doc in pl2.score(idx, query, 1000):
                 docno = idx.metadata(doc[0]).get('name')
                 print("{}\t_\t{}\t{}\t{}\tMeTA".format( query_num, docno,
                     res_num, doc[1]))
