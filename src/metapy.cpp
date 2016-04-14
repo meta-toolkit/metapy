@@ -18,6 +18,10 @@
 #include "meta/index/score_data.h"
 #include "meta/index/ranker/all.h"
 
+#include "meta/analyzers/token_stream.h"
+#include "meta/analyzers/tokenizers/character_tokenizer.h"
+#include "meta/analyzers/tokenizers/icu_tokenizer.h"
+
 namespace pybind11
 {
 namespace detail
@@ -166,6 +170,37 @@ class py_lm_ranker : public index::language_model_ranker
     void save(std::ostream&) const override
     {
         throw std::runtime_error{"cannot serialize python-defined rankers"};
+    }
+};
+
+class py_token_stream
+    : public util::clonable<analyzers::token_stream, py_token_stream>
+{
+  public:
+    virtual std::string next() override
+    {
+        PYBIND11_OVERLOAD_PURE(std::string, analyzers::token_stream, next, );
+        return "";
+    }
+
+    /**
+     * Determines whether there are more tokens available in the
+     * stream.
+     */
+    virtual operator bool() const override
+    {
+        PYBIND11_OVERLOAD_PURE(bool, analyzers::token_stream, operator bool, );
+        return false;
+    }
+
+    /**
+     * Sets the content for the stream.
+     * @param content The string content to set
+     */
+    virtual void set_content(std::string&& content) override
+    {
+        PYBIND11_OVERLOAD_PURE(void, analyzers::token_stream, set_content,
+                               std::move(content));
     }
 };
 
@@ -392,6 +427,51 @@ PYBIND11_PLUGIN(metapy)
         py::arg("k1") = index::okapi_bm25::default_k1,
         py::arg("b") = index::okapi_bm25::default_b,
         py::arg("k3") = index::okapi_bm25::default_k3);
+
+    using namespace analyzers;
+
+    auto m_ana = m.def_submodule("analyzers");
+
+    py::class_<py_token_stream> ts_base{m_ana, "TokenStream"};
+    ts_base.alias<token_stream>()
+        .def(py::init<>())
+        .def("next",
+             [](token_stream& ts)
+             {
+                 if (!ts)
+                     throw py::stop_iteration();
+                 return ts.next();
+             })
+        .def("has_more",
+             [](const token_stream& ts)
+             {
+                 return static_cast<bool>(ts);
+             })
+        .def("set_content",
+             [](token_stream& ts, std::string str)
+             {
+                 ts.set_content(std::move(str));
+             })
+        .def("__iter__",
+             [](token_stream& ts) -> token_stream&
+             {
+                 return ts;
+             })
+        .def("__next__", [](token_stream& ts)
+             {
+                 if (!ts)
+                     throw py::stop_iteration();
+                 return ts.next();
+             });
+
+    py::class_<tokenizers::character_tokenizer>{m_ana, "CharacterTokenizer",
+                                                ts_base}
+        .def(py::init<>());
+
+    py::class_<tokenizers::icu_tokenizer>{m_ana, "ICUTokenizer", ts_base}.def(
+        py::init<bool>(),
+        "Creates a tokenizer using the UTF text segmentation standard",
+        py::arg("suppress_tags") = false);
 
     return m.ptr();
 }
