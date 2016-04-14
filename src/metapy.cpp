@@ -22,6 +22,8 @@
 #include "meta/analyzers/tokenizers/character_tokenizer.h"
 #include "meta/analyzers/tokenizers/icu_tokenizer.h"
 
+#include "meta/analyzers/all.h"
+
 namespace pybind11
 {
 namespace detail
@@ -201,6 +203,16 @@ class py_token_stream
     {
         PYBIND11_OVERLOAD_PURE(void, analyzers::token_stream, set_content,
                                std::move(content));
+    }
+};
+
+class py_analyzer : public util::clonable<analyzers::analyzer, py_analyzer>
+{
+    virtual void tokenize(const corpus::document& doc,
+                          analyzers::featurizer& counts) override
+    {
+        PYBIND11_OVERLOAD_PURE(void, analyzers::analyzer, tokenize, doc,
+                               counts);
     }
 };
 
@@ -464,6 +476,7 @@ PYBIND11_PLUGIN(metapy)
                  return ts.next();
              });
 
+    // tokenizers
     py::class_<tokenizers::character_tokenizer>{m_ana, "CharacterTokenizer",
                                                 ts_base}
         .def(py::init<>());
@@ -472,6 +485,28 @@ PYBIND11_PLUGIN(metapy)
         py::init<bool>(),
         "Creates a tokenizer using the UTF text segmentation standard",
         py::arg("suppress_tags") = false);
+
+    // analyzers
+    py::class_<py_analyzer> analyzer_base{m_ana, "Analyzer"};
+    analyzer_base.alias<analyzers::analyzer>()
+        .def(py::init<>())
+        .def("analyze", &analyzer::analyze<uint64_t>)
+        .def("featurize", &analyzer::analyze<double>);
+
+    py::class_<ngram_word_analyzer>{m_ana, "NGramWordAnalyzer", analyzer_base}
+        .def("__init__",
+             [](ngram_word_analyzer& ana, uint16_t n, const token_stream& ts)
+             {
+                 new (&ana) ngram_word_analyzer(n, ts.clone());
+             });
+
+    py::class_<multi_analyzer>{m_ana, "MultiAnalyzer", analyzer_base};
+
+    m_ana.def("load", [](const std::string& filename)
+              {
+                  auto config = cpptoml::parse_file(filename);
+                  return analyzers::load(*config);
+              });
 
     return m.ptr();
 }
