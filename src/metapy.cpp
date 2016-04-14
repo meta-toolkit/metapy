@@ -516,12 +516,12 @@ PYBIND11_PLUGIN(metapy)
         py::arg("source"), py::arg("min"), py::arg("max"));
 
     py::class_<filters::list_filter> list_filter{m_ana, "ListFilter", ts_base};
-    list_filter.def("__init__",
-                    &make_token_stream<filters::list_filter, const std::string&,
-                                       filters::list_filter::type>);
     py::enum_<filters::list_filter::type>{list_filter, "Type"}
         .value("Accept", filters::list_filter::type::ACCEPT)
         .value("Reject", filters::list_filter::type::REJECT);
+    list_filter.def("__init__",
+                    &make_token_stream<filters::list_filter, const std::string&,
+                                       filters::list_filter::type>);
 
     py::class_<filters::lowercase_filter>{m_ana, "LowercaseFilter", ts_base}
         .def("__init__", &make_token_stream<filters::lowercase_filter>);
