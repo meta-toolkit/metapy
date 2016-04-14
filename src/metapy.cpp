@@ -22,6 +22,8 @@
 #include "meta/analyzers/tokenizers/character_tokenizer.h"
 #include "meta/analyzers/tokenizers/icu_tokenizer.h"
 
+#include "meta/analyzers/filters/all.h"
+
 #include "meta/analyzers/all.h"
 
 namespace pybind11
@@ -215,6 +217,13 @@ class py_analyzer : public util::clonable<analyzers::analyzer, py_analyzer>
                                counts);
     }
 };
+
+template <class TokenStream, class... Args>
+void make_token_stream(TokenStream& next, const analyzers::token_stream& prev,
+                       Args... args)
+{
+    new (&next) TokenStream(prev.clone(), args...);
+}
 
 PYBIND11_PLUGIN(metapy)
 {
@@ -485,6 +494,49 @@ PYBIND11_PLUGIN(metapy)
         py::init<bool>(),
         "Creates a tokenizer using the UTF text segmentation standard",
         py::arg("suppress_tags") = false);
+
+    // filters
+    py::class_<filters::alpha_filter>{m_ana, "AlphaFilter", ts_base}.def(
+        "__init__", &make_token_stream<filters::alpha_filter>);
+
+    py::class_<filters::empty_sentence_filter>{m_ana, "EmptySentenceFilter",
+                                               ts_base}
+        .def("__init__", &make_token_stream<filters::empty_sentence_filter>);
+
+    py::class_<filters::english_normalizer>{m_ana, "EnglishNormalizer", ts_base}
+        .def("__init__", &make_token_stream<filters::english_normalizer>);
+
+    py::class_<filters::icu_filter>{m_ana, "ICUFilter", ts_base}.def(
+        "__init__",
+        &make_token_stream<filters::icu_filter, const std::string&>);
+
+    py::class_<filters::length_filter>{m_ana, "LengthFilter", ts_base}.def(
+        "__init__",
+        &make_token_stream<filters::length_filter, uint64_t, uint64_t>,
+        py::arg("source"), py::arg("min"), py::arg("max"));
+
+    py::class_<filters::list_filter> list_filter{m_ana, "ListFilter", ts_base};
+    list_filter.def("__init__",
+                    &make_token_stream<filters::list_filter, const std::string&,
+                                       filters::list_filter::type>);
+    py::enum_<filters::list_filter::type>{list_filter, "Type"}
+        .value("Accept", filters::list_filter::type::ACCEPT)
+        .value("Reject", filters::list_filter::type::REJECT);
+
+    py::class_<filters::lowercase_filter>{m_ana, "LowercaseFilter", ts_base}
+        .def("__init__", &make_token_stream<filters::lowercase_filter>);
+
+    py::class_<filters::porter2_filter>{m_ana, "Porter2Filter", ts_base}.def(
+        "__init__", &make_token_stream<filters::porter2_filter>);
+
+    py::class_<filters::ptb_normalizer>{m_ana, "PennTreebankNormalizer",
+                                        ts_base}
+        .def("__init__", &make_token_stream<filters::ptb_normalizer>);
+
+    py::class_<filters::sentence_boundary>{m_ana, "SentenceBoundaryAdder",
+                                           ts_base}
+        .def("__init__", &make_token_stream<filters::sentence_boundary>);
+
 
     // analyzers
     py::class_<py_analyzer> analyzer_base{m_ana, "Analyzer"};
