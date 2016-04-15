@@ -10,6 +10,7 @@
 
 #include "metapy_analyzers.h"
 #include "metapy_index.h"
+#include "metapy_sequence.h"
 
 namespace py = pybind11;
 
@@ -19,6 +20,7 @@ PYBIND11_PLUGIN(metapy)
 
     metapy_bind_index(m);
     metapy_bind_analyzers(m);
+    metapy_bind_sequence(m);
 
     return m.ptr();
 }

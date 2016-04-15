@@ -28,8 +28,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(metapy SHARED src/metapy_analyzers.cpp
                           src/metapy_index.cpp
+                          src/metapy_sequence.cpp
                           src/metapy.cpp)
-target_link_libraries(metapy meta-index meta-ranker)
+target_link_libraries(metapy meta-index meta-ranker meta-sequence
+                      meta-greedy-tagger)
 
 # don't add a "lib" prefix to the metapy shared library
 set_target_properties(metapy PROPERTIES PREFIX "")
