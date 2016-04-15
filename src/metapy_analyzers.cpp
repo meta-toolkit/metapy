@@ -6,6 +6,7 @@
  * that part of the MeTA API.
  */
 
+#include <algorithm>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -20,7 +21,42 @@
 #include "meta/analyzers/all.h"
 #include "meta/corpus/document.h"
 
+namespace py = pybind11;
 using namespace meta;
+
+/**
+ * Applys the binary operator to each token in the range [first, last) that
+ * is delimited a token in [s_first, s_last).
+ *
+ * @see http://tristanbrindle.com/posts/a-quicker-study-on-tokenising/
+ */
+template <class InputIt, class ForwardIt, class BinOp>
+void for_each_token(InputIt first, InputIt last, ForwardIt s_first,
+                    ForwardIt s_last, BinOp binary_op)
+{
+    while (first != last)
+    {
+        const auto pos = std::find_first_of(first, last, s_first, s_last);
+        binary_op(first, pos);
+        if (pos == last)
+            break;
+        first = std::next(pos);
+    }
+}
+
+/**
+ * Applys the binary operator to each token in the range [first, last) that
+ * is delimited a token in delims.
+ *
+ * @see http://tristanbrindle.com/posts/a-quicker-study-on-tokenising/
+ */
+template <class InputIt, class Delims, class BinOp>
+void for_each_token(InputIt first, InputIt last, const Delims& delims,
+                    BinOp binary_op)
+{
+    for_each_token(first, last, std::begin(delims), std::end(delims),
+                   binary_op);
+}
 
 class py_token_stream
     : public util::clonable<analyzers::token_stream, py_token_stream>
@@ -70,7 +106,35 @@ void make_token_stream(TokenStream& next, const analyzers::token_stream& prev,
     new (&next) TokenStream(prev.clone(), args...);
 }
 
-namespace py = pybind11;
+template <class T>
+py::object ngram_analyze(analyzers::ngram_word_analyzer& ana,
+                         const corpus::document& doc)
+{
+    if (ana.n_value() == 1)
+        return py::cast(ana.analyze<T>(doc));
+
+    auto ngrams = ana.analyze<T>(doc);
+
+    py::dict ret;
+    for (const auto& kv : ngrams)
+    {
+        const auto& key = kv.key();
+
+        using iterator = decltype(key.begin());
+
+        py::tuple newkey{ana.n_value()};
+        uint64_t idx = 0;
+        for_each_token(key.begin(), key.end(), "_",
+                       [&](iterator first, iterator last)
+                       {
+                           if (first != last)
+                               newkey[idx++] = py::str({first, last});
+                       });
+        ret[newkey] = py::cast(kv.value());
+    }
+
+    return ret;
+}
 
 void metapy_bind_analyzers(py::module& m)
 {
@@ -162,7 +226,6 @@ void metapy_bind_analyzers(py::module& m)
                                            ts_base}
         .def("__init__", &make_token_stream<filters::sentence_boundary>);
 
-
     // analyzers
     py::class_<py_analyzer> analyzer_base{m_ana, "Analyzer"};
     analyzer_base.alias<analyzers::analyzer>()
@@ -175,7 +238,9 @@ void metapy_bind_analyzers(py::module& m)
              [](ngram_word_analyzer& ana, uint16_t n, const token_stream& ts)
              {
                  new (&ana) ngram_word_analyzer(n, ts.clone());
-             });
+             })
+        .def("analyze", &ngram_analyze<uint64_t>)
+        .def("featurize", &ngram_analyze<double>);
 
     py::class_<multi_analyzer>{m_ana, "MultiAnalyzer", analyzer_base};
 
