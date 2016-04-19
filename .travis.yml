@@ -31,10 +31,6 @@ script:
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then source travis/build_linux.sh; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then source travis/build_osx.sh; fi
 
-branches:
-  except:
-  - master
-
 deploy:
   provider: releases
   api_key:
