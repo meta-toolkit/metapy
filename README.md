@@ -1,5 +1,7 @@
 # metapy: (experimental) Python bindings for [MeTA][meta]
 
+[![Build Status](https://travis-ci.org/meta-toolkit/metapy.svg?branch=master)](https://travis-ci.org/meta-toolkit/metapy)
+
 This project provides Python (2.7 and 3.x are supported) bindings for the
 MeTA toolkit. They are still very much under construction, but the goal is
 to make it seamless to use MeTA's components within any Python application
