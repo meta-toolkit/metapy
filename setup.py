@@ -54,7 +54,9 @@ class CMakeBuildExt(build.build):
         if not cmake_exe:
             raise EnvironmentError("Could not find cmake executable")
 
-        cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release"]
+        py_version = "{}.{}".format(sys.version_info[0], sys.version_info[1])
+        cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release",
+                     "-DMETAPY_PYTHON_VERSION={}".format(py_version)]
 
         if self.icu_root:
             cmake_cmd.extend("-DICU_ROOT=\"{}\"".format(self.icu_root))
