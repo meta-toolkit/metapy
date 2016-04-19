@@ -14,6 +14,8 @@ from distutils.spawn import find_executable
 from distutils import log
 from distutils.command import build
 
+VERSION = "0.0.1.dev0"
+
 # See:
 # http://stackoverflow.com/questions/3223604/how-to-create-a-temporary-directory-and-get-the-path-file-name-in-python
 @contextlib.contextmanager
@@ -77,6 +79,7 @@ class CMakeBuildExt(build.build):
 
         with open(initpy, "w") as f:
             f.write("from .metapy import *\n")
+            f.write("__version__ = {}\n".format(VERSION))
 
     def run(self):
         self.cmake_build()
@@ -119,7 +122,7 @@ def clean_dist():
 clean_dist()
 
 setup(name = "metapy",
-      version = "0.0.1.dev0",
+      version = VERSION,
       description = "Python bindings for MeTA",
       author = "Chase Geigle",
       author_email = "geigle1@illinois.edu",
