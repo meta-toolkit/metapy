@@ -27,6 +27,7 @@ matrix:
       env: VERSION=3.5
 
 install:
+  - git submodule update --init --recursive
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then source travis/install_linux.sh; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then source travis/install_osx.sh; fi
 
