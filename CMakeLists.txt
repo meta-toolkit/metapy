@@ -14,17 +14,21 @@ set(METAPY_PYTHON_VERSION "" CACHE STRING
 
 add_subdirectory(deps/meta EXCLUDE_FROM_ALL)
 
-if (NOT ${METAPY_PYTHON_VERSION} STREQUAL "")
-  list(APPEND Python_ADDITIONAL_VERSIONS ${METAPY_PYTHON_VERSION})
-  find_package(PythonLibs ${METAPY_PYTHON_VERSION} EXACT)
-  if (NOT PythonLibs_FOUND)
-    find_package(PythonLibs ${METAPY_PYTHON_VERSION} REQUIRED)
+if (NOT PYTHON_INCLUDE_DIRS)
+  if (NOT ${METAPY_PYTHON_VERSION} STREQUAL "")
+    list(APPEND Python_ADDITIONAL_VERSIONS ${METAPY_PYTHON_VERSION})
+    find_package(PythonLibs ${METAPY_PYTHON_VERSION} EXACT)
+    if (NOT PythonLibs_FOUND)
+      find_package(PythonLibs ${METAPY_PYTHON_VERSION} REQUIRED)
+    endif()
+  else()
+    find_package(PythonLibs REQUIRED)
   endif()
 else()
-  find_package(PythonLibs REQUIRED)
+  message("-- Using manual Python include dirs: ${PYTHON_INCLUDE_DIRS}")
 endif()
 
-include_directories(${PYTHON_INCLUDE_DIR})
+include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
