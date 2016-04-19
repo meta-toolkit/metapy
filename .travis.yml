@@ -1,23 +1,35 @@
-os:
-  - osx
+sudo: required
 
-env:
-  matrix:
-  - VERSION=2.7.11
-  - VERSION=3.3.5
-  - VERSION=3.4.4
-  - VERSION=3.5.1
+matrix:
+  include:
+    - os: osx
+      env: VERSION=2.7.11
+
+    - os: osx
+      env: VERSION=3.3.5
+
+    - os: osx
+      env: VERSION=3.4.4
+
+    - os: osx
+      env: VERSION=3.5.1
+
+    - os: linux
+      env: VERSION=2.7
+
+    - os: linux
+      env: VERSION=3.4
+
+    - os: linux
+      env: VERSION=3.5
 
 install:
-  - git clone https://github.com/MacPython/terryfy
-  - source terryfy/travis_tools.sh
-  - get_python_environment macpython $VERSION venv
-  - pip install wheel
-  - pip wheel -w dist ./
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then source travis/install_linux.sh; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then source travis/install_osx.sh; fi
 
 script:
-  - ls dist/*.whl
-  - pip install dist/*.whl
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then source travis/build_linux.sh; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then source travis/build_osx.sh; fi
 
 branches:
   except:
