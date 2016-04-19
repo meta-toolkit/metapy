@@ -11,7 +11,7 @@ import tempfile
 from setuptools import setup, Extension
 from setuptools.command import build_ext, bdist_egg, develop
 from distutils.spawn import find_executable
-from distutils import log
+from distutils import log, sysconfig
 from distutils.command import build
 
 VERSION = "0.0.1.dev0"
@@ -56,7 +56,7 @@ class CMakeBuildExt(build.build):
 
         py_version = "{}.{}".format(sys.version_info[0], sys.version_info[1])
         cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release",
-                     "-DMETAPY_PYTHON_VERSION={}".format(py_version)]
+                     "-DPYTHON_INCLUDE_DIRS={}".format(sysconfig.get_python_inc())]
 
         if self.icu_root:
             cmake_cmd.extend(["-DICU_ROOT={}".format(self.icu_root)])
