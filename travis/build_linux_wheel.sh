@@ -69,7 +69,8 @@ function repair_wheelhouse {
 PIP="$(cpython_path $PYTHON_VERSION)/bin/pip"
 pushd /metapy
 $PIP wheel -w unfixed_wheels --verbose ./
-repair_wheelhouse unifixed_wheels dist
+ls unfixed_wheels/*.whl
+repair_wheelhouse unfixed_wheels dist
 ls dist/*.whl
 $PIP install dist/*.whl
 popd
