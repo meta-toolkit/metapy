@@ -59,10 +59,10 @@ class CMakeBuildExt(build.build):
                      "-DMETAPY_PYTHON_VERSION={}".format(py_version)]
 
         if self.icu_root:
-            cmake_cmd.extend("-DICU_ROOT=\"{}\"".format(self.icu_root))
+            cmake_cmd.extend(["-DICU_ROOT=\"{}\"".format(self.icu_root)])
 
         if self.generator:
-            cmake_cmd.extend("-G{}".format(self.generator))
+            cmake_cmd.extend(["-G{}".format(self.generator)])
 
         with tempdir() as dirpath:
             print("Build directory: {}".format(os.getcwd()))
