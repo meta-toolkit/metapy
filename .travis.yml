@@ -13,7 +13,7 @@ install:
   - source terryfy/travis_tools.sh
   - get_python_environment macpython $VERSION venv
   - pip install wheel
-  - pip wheel ./
+  - pip wheel -w dist ./
 
 script:
   - ls dist/*.whl
