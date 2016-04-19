@@ -1,0 +1,16 @@
+# Licenses
+include LICENSE.mit
+include LICENSE.ncsa
+
+# Build system
+include CMakeLists.txt
+
+# Dependencies
+recursive-include deps **
+
+# metapy source code
+recursive-include src **
+recursive-include include **
+
+# metapy package
+recursive-include dist/metapy **

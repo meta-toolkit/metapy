@@ -37,3 +37,5 @@ target_link_libraries(metapy meta-index meta-ranker meta-sequence
 
 # don't add a "lib" prefix to the metapy shared library
 set_target_properties(metapy PROPERTIES PREFIX "")
+
+install(TARGETS metapy DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/dist/metapy)
