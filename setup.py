@@ -81,7 +81,7 @@ class CMakeBuildExt(build.build):
 
         with open(initpy, "w") as f:
             f.write("from .metapy import *\n")
-            f.write("__version__ = {}\n".format(VERSION))
+            f.write('__version__ = "{}"\n'.format(VERSION))
 
     def run(self):
         self.cmake_build()
