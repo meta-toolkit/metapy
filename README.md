@@ -10,7 +10,21 @@ to make it seamless to use MeTA's components within any Python application
 This project is made possible by the excellent [pybind11][pybind11]
 library.
 
-## Getting Started
+## Getting Started (the easy way)
+
+```bash
+# Ensure your pip is up to date
+pip install --upgrade pip
+
+# install metapy!
+pip install metapy
+```
+
+This should work on OS X and Linux with pretty much any recent Python
+version >= 2.7. On Linux, make sure to update your `pip` to version 8.1 so
+you can install from a binary package---this will save you a lot of time.
+
+## Getting Started (the hard way)
 
 You will, of course, need Python installed. You will also need its headers
 to be installed as well, so look for a `python-dev` or similar package for
