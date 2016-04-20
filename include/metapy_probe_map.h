@@ -60,7 +60,7 @@ struct probe_map_caster
     }
 
     PYBIND11_TYPE_CASTER(type, _("dict<") + key_conv::name() + _(", ")
-                                   + value_conv::name() + _(">"))
+                                   + value_conv::name() + _(">"));
 };
 
 template <class Key, class Value, class ProbingStrategy, class Hash,
