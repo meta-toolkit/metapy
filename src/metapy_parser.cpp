@@ -54,6 +54,30 @@ class visitor_wrapper : public parser::visitor<py::object>
 };
 
 template <class Visitor>
+class visitor_wrapper<Visitor, std::unique_ptr<parser::node>>
+    : public parser::visitor<py::object>
+{
+  public:
+    virtual py::object operator()(parser::leaf_node& ln) override
+    {
+        return py::cast(vtor_(ln).release());
+    }
+
+    virtual py::object operator()(parser::internal_node& n) override
+    {
+        return py::cast(vtor_(n).release());
+    }
+
+    Visitor& visitor()
+    {
+        return vtor_;
+    }
+
+  private:
+    Visitor vtor_;
+};
+
+template <class Visitor>
 class visitor_wrapper<Visitor, void> : public parser::visitor<py::object>
 {
   public:
@@ -76,6 +100,25 @@ class visitor_wrapper<Visitor, void> : public parser::visitor<py::object>
 
   private:
     Visitor vtor_;
+};
+
+class py_visitor : public parser::visitor<py::object>
+{
+  public:
+    virtual py::object operator()(parser::leaf_node& ln) override
+    {
+        PYBIND11_OVERLOAD_PURE(py::object, parser::visitor<py::object>,
+                               visit_leaf, ln);
+        return py::cast(nullptr);
+    }
+
+    virtual py::object operator()(parser::internal_node& n) override
+    {
+
+        PYBIND11_OVERLOAD_PURE(py::object, parser::visitor<py::object>,
+                               visit_internal, n);
+        return py::cast(nullptr);
+    }
 };
 
 void metapy_bind_parser(py::module& m)
@@ -166,7 +209,6 @@ void metapy_bind_parser(py::module& m)
                  tree.pretty_print(ss);
                  return ss.str();
              })
-        .def("transform", &parse_tree::transform)
         .def("visit", [](parse_tree& tree, parser::visitor<py::object>& vtor)
              {
                  return tree.visit(vtor);
@@ -174,17 +216,33 @@ void metapy_bind_parser(py::module& m)
 
     py::implicitly_convertible<node, parse_tree>();
 
-    py::class_<visitor<py::object>> vtorbase{m_parse, "Visitor"};
-    py::class_<tree_transformer> trnsbase{m_parse, "TreeTransformer"};
+    py::class_<py_visitor> vtorbase{m_parse, "Visitor"};
 
-    py::class_<annotation_remover>{m_parse, "AnnotationRemover", trnsbase}.def(
+    vtorbase.alias<visitor<py::object>>()
+        .def(py::init<>())
+        .def("visit_leaf",
+             [](visitor<py::object>& vtor, leaf_node& ln)
+             {
+                 return vtor(ln);
+             })
+        .def("visit_internal", [](visitor<py::object>& vtor, internal_node& in)
+             {
+                 return vtor(in);
+             });
+
+    py::class_<visitor_wrapper<annotation_remover>>{
+        m_parse, "AnnotationRemover", vtorbase}
+        .def(py::init<>());
+    py::class_<visitor_wrapper<binarizer>>{m_parse, "Binarizer", vtorbase}.def(
         py::init<>());
-    py::class_<binarizer>{m_parse, "Binarizer", trnsbase}.def(py::init<>());
-    py::class_<debinarizer>{m_parse, "Debinarizer", trnsbase}.def(py::init<>());
-    py::class_<empty_remover>{m_parse, "EmptyRemover", trnsbase}.def(
-        py::init<>());
-    py::class_<unary_chain_remover>{m_parse, "UnaryChainRemover", trnsbase}.def(
-        py::init<>());
+    py::class_<visitor_wrapper<debinarizer>>{m_parse, "Debinarizer", vtorbase}
+        .def(py::init<>());
+    py::class_<visitor_wrapper<empty_remover>>{m_parse, "EmptyRemover",
+                                               vtorbase}
+        .def(py::init<>());
+    py::class_<visitor_wrapper<unary_chain_remover>>{
+        m_parse, "UnaryChainRemover", vtorbase}
+        .def(py::init<>());
 
     py::class_<visitor_wrapper<head_finder>>{m_parse, "HeadFinder", vtorbase}
         .def(py::init<>());
