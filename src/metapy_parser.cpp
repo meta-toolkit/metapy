@@ -195,6 +195,7 @@ void metapy_bind_parser(py::module& m)
              {
                  new (&tree) parse_tree(n.clone());
              })
+        .def(py::init<const parse_tree&>())
         .def("__str__",
              [](const parse_tree& tree)
              {
