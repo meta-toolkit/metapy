@@ -23,6 +23,9 @@
 #include "meta/parser/trees/visitors/head_finder.h"
 #include "meta/parser/trees/visitors/leaf_node_finder.h"
 
+#include "meta/parser/sequence_extractor.h"
+#include "meta/parser/sr_parser.h"
+
 #include "meta/parser/io/ptb_reader.h"
 
 #include "metapy_parser.h"
@@ -270,6 +273,14 @@ void metapy_bind_parser(py::module& m)
                  return ret;
              });
 
+    py::class_<visitor_wrapper<sequence_extractor>>{
+        m_parse, "SequenceExtractor", vtorbase}
+        .def(py::init<>())
+        .def("sequence", [](visitor_wrapper<sequence_extractor>& vtor)
+             {
+                 return vtor.visitor().sequence();
+             });
+
     py::class_<evalb>{m_parse, "EvalB"}
         .def(py::init<>())
         .def("matched", &evalb::matched)
@@ -299,4 +310,28 @@ void metapy_bind_parser(py::module& m)
                     std::stringstream ss{input};
                     return parser::io::extract_trees(ss).at(0);
                 });
+
+    py::class_<sr_parser> parser{m_parse, "Parser"};
+
+    py::enum_<sr_parser::training_algorithm>{parser, "TrainingAlgorithm"}
+        .value("EarlyTermination",
+               sr_parser::training_algorithm::EARLY_TERMINATION)
+        .value("BeamSearch", sr_parser::training_algorithm::BEAM_SEARCH);
+
+    py::class_<sr_parser::training_options>{parser, "TrainingOptions"}
+        .def(py::init<>())
+        .def(py::init<const sr_parser::training_options&>())
+        .def_readwrite("batch_size", &sr_parser::training_options::batch_size)
+        .def_readwrite("beam_size", &sr_parser::training_options::beam_size)
+        .def_readwrite("max_iterations",
+                       &sr_parser::training_options::max_iterations)
+        .def_readwrite("seed", &sr_parser::training_options::seed)
+        .def_readwrite("num_threads", &sr_parser::training_options::num_threads)
+        .def_readwrite("algorithm", &sr_parser::training_options::algorithm);
+
+    parser.def(py::init<>())
+        .def(py::init<const std::string&>())
+        .def("parse", &sr_parser::parse)
+        .def("train", &sr_parser::train)
+        .def("save", &sr_parser::save);
 }
