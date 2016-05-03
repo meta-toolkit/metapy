@@ -26,7 +26,7 @@ install:
     - pip install --disable-pip-version-check --user --upgrade pip
     - pip install wheel
 before_build:
-    - cd C:\projects\meta
+    - cd %APPVEYOR_BUILD_FOLDER%
     - git submodule update --init --recursive
 build_script:
     - bash -lc "export PATH=/mingw64/bin:$PATH && cd $APPVEYOR_BUILD_FOLDER && pip wheel -w dist --verbose ./"
