@@ -52,4 +52,10 @@ if (APPLE)
                         SUFFIX ".so")
 endif()
 
+if (WIN32)
+  set_target_properties(metapy PROPERTIES SUFFIX ".pyd")
+  target_link_libraries(metapy ${PYTHON_LIBRARY})
+  target_compile_definitions(metapy PUBLIC -DMS_WIN64)
+endif()
+
 install(TARGETS metapy DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/dist/metapy)

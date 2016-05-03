@@ -6,6 +6,8 @@
  * for that part of the MeTA API.
  */
 
+#include <cmath>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 

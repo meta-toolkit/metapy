@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import contextlib
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -45,7 +46,7 @@ class CMakeBuildExt(build.build):
     def initialize_options(self):
         build.build.initialize_options(self)
         self.icu_root = None
-        self.generator = None
+        self.generator = 'MSYS Makefiles' if platform.system() == 'Windows' else None
 
     def cmake_build(self):
         src_dir = os.path.dirname(os.path.realpath(__file__))
@@ -55,8 +56,12 @@ class CMakeBuildExt(build.build):
             raise EnvironmentError("Could not find cmake executable")
 
         py_version = "{}.{}".format(sys.version_info[0], sys.version_info[1])
-        cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release",
-                     "-DPYTHON_INCLUDE_DIRS={}".format(sysconfig.get_python_inc())]
+        cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release"]
+
+        if platform.system() == 'Windows':
+            cmake_cmd.append("-DMETAPY_PYTHON_VERSION={}".format(py_version))
+        else:
+            cmake_cmd.append("-DPYTHON_INCLUDE_DIRS={}".format(sysconfig.get_python_inc()))
 
         if self.icu_root:
             cmake_cmd.extend(["-DICU_ROOT={}".format(self.icu_root)])
@@ -82,6 +87,13 @@ class CMakeBuildExt(build.build):
         with open(initpy, "w") as f:
             f.write("from .metapy import *\n")
             f.write('__version__ = "{}"\n'.format(VERSION))
+
+        # Copy over extra DLLs on Windows
+        if platform.system() == 'Windows':
+            dlls = ['libwinpthread-1.dll', 'libgcc_s_seh-1.dll', 'libstdc++-6.dll', 'zlib1.dll']
+            for dll in dlls:
+                shutil.copyfile(os.path.join("c:", os.sep, "msys64", "mingw64", "bin", dll),
+                                os.path.join(src_dir, "dist", "metapy", dll))
 
     def run(self):
         self.cmake_build()
