@@ -15,7 +15,7 @@ from distutils.spawn import find_executable
 from distutils import log, sysconfig
 from distutils.command import build
 
-VERSION = "0.0.1.dev3"
+VERSION = "0.0.1.dev4"
 
 # See:
 # http://stackoverflow.com/questions/3223604/how-to-create-a-temporary-directory-and-get-the-path-file-name-in-python
@@ -161,7 +161,8 @@ setup(name = "metapy",
           'License :: OSI Approved :: MIT License',
           'License :: OSI Approved :: University of Illinois/NCSA Open Source License',
           'Operating System :: POSIX :: Linux',
-          # Add OS X once tested...
+          'Operating System :: MacOS :: MacOS X',
+          'Operating System :: Microsoft :: Windows',
           'Topic :: Scientific/Engineering',
           'Topic :: Scientific/Engineering :: Artificial Intelligence',
           'Topic :: Scientific/Engineering :: Information Analysis',
