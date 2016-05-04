@@ -44,5 +44,4 @@ deploy:
         secure: 1wiaQIQwvj+mZew4b8pvXNh/yXAmeu6VkwDDOp6F1O5cEuio5xLsCZLyHe4agKWJ
     artifact: 'dist\*.whl'
     on:
-        branch: master
         appveyor_repo_tag: true
