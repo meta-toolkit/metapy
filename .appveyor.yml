@@ -42,6 +42,6 @@ deploy:
     provider: GitHub
     auth_token:
         secure: 1wiaQIQwvj+mZew4b8pvXNh/yXAmeu6VkwDDOp6F1O5cEuio5xLsCZLyHe4agKWJ
-    artifact: 'dist\*.whl'
+    artifact: /dist\\.*\.whl/
     on:
         appveyor_repo_tag: true
