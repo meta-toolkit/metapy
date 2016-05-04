@@ -6,10 +6,14 @@ os: Visual Studio 2015
 environment:
     MSYSTEM: MINGW64
     matrix:
-        - PYTHON_PATH: C:\Python27-x64
-        - PYTHON_PATH: C:\Python33-x64
-        - PYTHON_PATH: C:\Python34-x64
-        - PYTHON_PATH: C:\Python35-x64
+        - PYTHON_PATH: C:/Python27-x64
+          PYTHON_VERSION: 27
+        - PYTHON_PATH: C:/Python33-x64
+          PYTHON_VERSION: 33
+        - PYTHON_PATH: C:/Python34-x64
+          PYTHON_VERSION: 34
+        - PYTHON_PATH: C:/Python35-x64
+          PYTHON_VERSION: 35
 
 artifacts:
     - path: 'dist\*.whl'
@@ -25,6 +29,9 @@ install:
     - python --version
     - pip install --disable-pip-version-check --user --upgrade pip
     - pip install wheel
+    # Python 3.3 and 3.4 on Windows don't seem to come with a libpython33.a
+    # or libpython34.a, so we need to generate one if it doesn't exist
+    - bash -lc "if [ ! -f $PYTHON_PATH/libs/libpython$PYTHON_VERSION.a ]; then cd $PYTHON_PATH/libs && gendef /c/windows/system32/python$PYTHON_VERSION.dll && dlltool --as-flags=--64 -m i386:x86-64 -k --output-lib libpython$PYTHON_VERSION.a --input-def python$PYTHON_VERSION.def; fi"
 before_build:
     - cd %APPVEYOR_BUILD_FOLDER%
     - git submodule update --init --recursive
