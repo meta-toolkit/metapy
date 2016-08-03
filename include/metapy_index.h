@@ -7,6 +7,7 @@
 #ifndef METAPY_INDEX_H_
 #define METAPY_INDEX_H_
 
+#include <cmath>
 #include <pybind11/pybind11.h>
 
 #include "meta/index/ranker/ranker.h"

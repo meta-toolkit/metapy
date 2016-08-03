@@ -8,6 +8,7 @@
 #ifndef METAPY_PROBE_MAP_H_
 #define METAPY_PROBE_MAP_H_
 
+#include <cmath>
 #include <pybind11/pybind11.h>
 
 #include "meta/hashing/probe_map.h"
