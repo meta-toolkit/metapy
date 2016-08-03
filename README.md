@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/meta-toolkit/metapy.svg?branch=master)](https://travis-ci.org/meta-toolkit/metapy)
 
+[![Windows Build Status](https://ci.appveyor.com//api/projects/status/github/meta-toolkit/metapy?svg=true&branch=master)](https://ci.appveyor.com/project/skystrife/metapy)
+
 This project provides Python (2.7 and 3.x are supported) bindings for the
 MeTA toolkit. They are still very much under construction, but the goal is
 to make it seamless to use MeTA's components within any Python application
@@ -20,9 +22,10 @@ pip install --upgrade pip
 pip install metapy
 ```
 
-This should work on OS X and Linux with pretty much any recent Python
-version >= 2.7. On Linux, make sure to update your `pip` to version 8.1 so
-you can install from a binary package---this will save you a lot of time.
+This should work on Linux, OS X, and Windows with pretty much any recent
+Python version >= 2.7. On Linux, make sure to update your `pip` to version
+8.1 so you can install from a binary package---this will save you a lot of
+time.
 
 ## Getting Started (the hard way)
 
