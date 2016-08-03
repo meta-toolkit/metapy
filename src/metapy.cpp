@@ -8,8 +8,6 @@
  * API surface so that interactive web demos can be made.
  */
 
-#include <cmath>
-
 #include "metapy_analyzers.h"
 #include "metapy_index.h"
 #include "metapy_sequence.h"

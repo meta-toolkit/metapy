@@ -56,6 +56,9 @@ if (WIN32)
   set_target_properties(metapy PROPERTIES SUFFIX ".pyd")
   target_link_libraries(metapy ${PYTHON_LIBRARY})
   target_compile_definitions(metapy PUBLIC -DMS_WIN64)
+
+  # fix for std::_hypot has not been declared
+  target_compile_definitions(metapy PUBLIC -D_hypot=hypot)
 endif()
 
 install(TARGETS metapy DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/dist/metapy)

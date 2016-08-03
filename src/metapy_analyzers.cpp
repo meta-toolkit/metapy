@@ -6,11 +6,11 @@
  * that part of the MeTA API.
  */
 
-#include <algorithm>
 #include <cmath>
-
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <algorithm>
 
 #include "metapy_analyzers.h"
 #include "metapy_probe_map.h"
@@ -184,7 +184,9 @@ void metapy_bind_analyzers(py::module& m)
     py::class_<tokenizers::icu_tokenizer>{m_ana, "ICUTokenizer", ts_base}.def(
         py::init<bool>(),
         "Creates a tokenizer using the UTF text segmentation standard",
-        py::arg("suppress_tags") = false);
+        // hack around g++ 4.8 ambiguous overloaded operator=
+        py::arg_t<bool>{"suppress_tags", false});
+        //py::arg("suppress_tags") = false);
 
     // filters
     py::class_<filters::alpha_filter>{m_ana, "AlphaFilter", ts_base}.def(

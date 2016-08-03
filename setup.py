@@ -135,13 +135,13 @@ def clean_dist():
 
 clean_dist()
 
-setup(name = "metapy",
+setup(name = 'metapy',
       version = VERSION,
-      description = "Python bindings for MeTA",
-      author = "Chase Geigle",
-      author_email = "geigle1@illinois.edu",
-      url = "https://github.com/meta-toolkit/metapy",
-      license = "MIT",
+      description = 'Python bindings for MeTA',
+      author = 'Chase Geigle',
+      author_email = 'geigle1@illinois.edu',
+      url = 'https://github.com/meta-toolkit/metapy',
+      license = 'MIT',
       packages = ['metapy'],
       package_dir = { '': 'dist' },
       include_package_data = True,

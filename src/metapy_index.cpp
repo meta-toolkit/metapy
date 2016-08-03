@@ -99,7 +99,7 @@ void metapy_bind_index(py::module& m)
                  doc.content(content, encoding);
              },
              "Sets the content of the document", py::arg("content"),
-             py::arg("encoding") = "utf-8")
+             py::arg("encoding") = std::string{"utf-8"})
         .def("encoding",
              [](const corpus::document& doc)
              {
