@@ -58,7 +58,7 @@ struct type_caster<meta::index::search_result>
 }
 }
 
-PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>)
 
 void metapy_bind_index(pybind11::module& m);
 

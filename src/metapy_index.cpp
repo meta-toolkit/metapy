@@ -8,8 +8,8 @@
 
 #include <cmath>
 
-#include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include "metapy_index.h"
@@ -17,8 +17,8 @@
 #include "cpptoml.h"
 #include "meta/index/inverted_index.h"
 #include "meta/index/make_index.h"
-#include "meta/index/score_data.h"
 #include "meta/index/ranker/all.h"
+#include "meta/index/score_data.h"
 
 namespace py = pybind11;
 
@@ -74,41 +74,25 @@ void metapy_bind_index(py::module& m)
         .def(py::init<doc_id, const class_label&>(),
              py::arg("d_id") = doc_id{0},
              py::arg("label") = class_label{"[NONE]"})
-        .def("label",
-             [](const corpus::document& doc)
-             {
-                 return doc.label();
-             },
+        .def("label", [](const corpus::document& doc) { return doc.label(); },
              "Gets the label for the document")
-        .def("label",
-             [](corpus::document& doc, const class_label& label)
-             {
-                 doc.label(label);
-             },
+        .def("label", [](corpus::document& doc,
+                         const class_label& label) { doc.label(label); },
              "Sets the label for the document")
         .def("content",
-             [](const corpus::document& doc)
-             {
-                 return doc.content();
-             },
+             [](const corpus::document& doc) { return doc.content(); },
              "Gets the content of the document")
-        .def("content",
-             [](corpus::document& doc, const std::string& content,
-                const std::string& encoding)
-             {
-                 doc.content(content, encoding);
-             },
-             "Sets the content of the document", py::arg("content"),
-             py::arg("encoding") = std::string{"utf-8"})
+        .def(
+            "content",
+            [](corpus::document& doc, const std::string& content,
+               const std::string& encoding) { doc.content(content, encoding); },
+            "Sets the content of the document", py::arg("content"),
+            py::arg("encoding") = std::string{"utf-8"})
         .def("encoding",
-             [](const corpus::document& doc)
-             {
-                 return doc.encoding();
-             },
+             [](const corpus::document& doc) { return doc.encoding(); },
              "Gets the encoding for the document's content")
         .def("encoding",
-             [](corpus::document& doc, const std::string& encoding)
-             {
+             [](corpus::document& doc, const std::string& encoding) {
                  doc.encoding(encoding);
              },
              "Sets the encoding for the document's content")
@@ -117,8 +101,7 @@ void metapy_bind_index(py::module& m)
 
     py::class_<corpus::metadata>{m_idx, "Metadata"}.def(
         "get",
-        [](corpus::metadata& md, const std::string& name) -> py::object
-        {
+        [](corpus::metadata& md, const std::string& name) -> py::object {
             using field_type = corpus::metadata::field_type;
 
             py::object ret;
@@ -187,15 +170,9 @@ void metapy_bind_index(py::module& m)
         .def("metadata", &index::disk_index::metadata,
              "Extract the metadata for a document", py::keep_alive<0, 1>())
         .def("unique_terms",
-             [](const index::disk_index& idx)
-             {
-                 return idx.unique_terms();
-             })
-        .def("unique_terms",
-             [](const index::disk_index& idx, doc_id did)
-             {
-                 return idx.unique_terms(did);
-             })
+             [](const index::disk_index& idx) { return idx.unique_terms(); })
+        .def("unique_terms", [](const index::disk_index& idx,
+                                doc_id did) { return idx.unique_terms(did); })
         .def("get_term_id", &index::disk_index::get_term_id)
         .def("term_text", &index::disk_index::term_text);
 
@@ -210,8 +187,7 @@ void metapy_bind_index(py::module& m)
         .def("avg_doc_length", &index::inverted_index::avg_doc_length);
 
     m_idx.def("make_inverted_index",
-              [](const std::string& filename)
-              {
+              [](const std::string& filename) {
                   auto config = cpptoml::parse_file(filename);
                   return index::make_index<index::inverted_index>(*config);
               },
@@ -222,8 +198,7 @@ void metapy_bind_index(py::module& m)
                       float>())
         .def_property_readonly(
             "idx",
-            [](index::score_data& sd) -> index::inverted_index&
-            {
+            [](index::score_data& sd) -> index::inverted_index& {
                 return sd.idx;
             })
         .def_readwrite("avg_dl", &index::score_data::avg_dl)
@@ -242,29 +217,25 @@ void metapy_bind_index(py::module& m)
         .def_readwrite("doc_unique_terms",
                        &index::score_data::doc_unique_terms);
 
-    py::class_<py_ranker> rank_base{m_idx, "Ranker"};
-    rank_base.alias<index::ranker>()
-        .def(py::init<>())
+    py::class_<index::ranker, py_ranker> rank_base{m_idx, "Ranker"};
+    rank_base.def(py::init<>())
         .def("score",
              [](index::ranker& ranker, index::inverted_index& idx,
                 const corpus::document& query, uint64_t num_results,
-                const index::ranker::filter_function_type& filter)
-             {
+                const index::ranker::filter_function_type& filter) {
                  return ranker.score(idx, query, num_results, filter);
              },
              "Scores the documents in the inverted index with respect to the "
              "query "
              "using this ranker",
              py::arg("idx"), py::arg("query"), py::arg("num_results") = 10,
-             py::arg("filter") = std::function<bool(doc_id)>([](doc_id)
-                                                             {
-                                                                 return true;
-                                                             }))
+             py::arg("filter")
+             = std::function<bool(doc_id)>([](doc_id) { return true; }))
         .def("score_one", &index::ranker::score_one);
 
-    py::class_<py_lm_ranker> lm_rank_base{m_idx, "LanguageModelRanker",
-                                          rank_base};
-    lm_rank_base.alias<index::language_model_ranker>().def(py::init<>());
+    py::class_<index::language_model_ranker, py_lm_ranker> lm_rank_base{
+        m_idx, "LanguageModelRanker", rank_base};
+    lm_rank_base.def(py::init<>());
 
     py::class_<index::absolute_discount>{m_idx, "AbsoluteDiscount",
                                          lm_rank_base}

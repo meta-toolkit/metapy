@@ -222,9 +222,8 @@ void metapy_bind_parser(py::module& m)
 
     py::implicitly_convertible<node, parse_tree>();
 
-    py::class_<py_visitor> vtorbase{m_parse, "Visitor"};
-
-    vtorbase.alias<visitor<py::object>>()
+    py::class_<visitor<py::object>, py_visitor> vtorbase{m_parse, "Visitor"};
+    vtorbase
         .def(py::init<>())
         .def("visit_leaf",
              [](visitor<py::object>& vtor, leaf_node& ln)

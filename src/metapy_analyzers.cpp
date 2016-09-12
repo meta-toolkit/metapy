@@ -16,11 +16,11 @@
 #include "metapy_probe_map.h"
 
 #include "cpptoml.h"
+#include "meta/analyzers/all.h"
+#include "meta/analyzers/filters/all.h"
 #include "meta/analyzers/token_stream.h"
 #include "meta/analyzers/tokenizers/character_tokenizer.h"
 #include "meta/analyzers/tokenizers/icu_tokenizer.h"
-#include "meta/analyzers/filters/all.h"
-#include "meta/analyzers/all.h"
 #include "meta/corpus/document.h"
 
 namespace py = pybind11;
@@ -76,7 +76,7 @@ class py_token_stream
      */
     virtual operator bool() const override
     {
-        PYBIND11_OVERLOAD_PURE(bool, analyzers::token_stream, operator bool, );
+        PYBIND11_OVERLOAD_PURE(bool, analyzers::token_stream, operator bool,);
         return false;
     }
 
@@ -127,8 +127,7 @@ py::object ngram_analyze(analyzers::ngram_word_analyzer& ana,
         py::tuple newkey{ana.n_value()};
         uint64_t idx = 0;
         for_each_token(key.begin(), key.end(), "_",
-                       [&](iterator first, iterator last)
-                       {
+                       [&](iterator first, iterator last) {
                            if (first != last)
                                newkey[idx++] = py::str({first, last});
                        });
@@ -144,37 +143,26 @@ void metapy_bind_analyzers(py::module& m)
 
     auto m_ana = m.def_submodule("analyzers");
 
-    py::class_<py_token_stream> ts_base{m_ana, "TokenStream"};
-    ts_base.alias<token_stream>()
-        .def(py::init<>())
+    py::class_<token_stream, py_token_stream> ts_base{m_ana, "TokenStream"};
+    ts_base.def(py::init<>())
         .def("next",
-             [](token_stream& ts)
-             {
+             [](token_stream& ts) {
                  if (!ts)
                      throw py::stop_iteration();
                  return ts.next();
              })
         .def("has_more",
-             [](const token_stream& ts)
-             {
-                 return static_cast<bool>(ts);
-             })
+             [](const token_stream& ts) { return static_cast<bool>(ts); })
         .def("set_content",
-             [](token_stream& ts, std::string str)
-             {
+             [](token_stream& ts, std::string str) {
                  ts.set_content(std::move(str));
              })
-        .def("__iter__",
-             [](token_stream& ts) -> token_stream&
-             {
-                 return ts;
-             })
-        .def("__next__", [](token_stream& ts)
-             {
-                 if (!ts)
-                     throw py::stop_iteration();
-                 return ts.next();
-             });
+        .def("__iter__", [](token_stream& ts) -> token_stream& { return ts; })
+        .def("__next__", [](token_stream& ts) {
+            if (!ts)
+                throw py::stop_iteration();
+            return ts.next();
+        });
 
     // tokenizers
     py::class_<tokenizers::character_tokenizer>{m_ana, "CharacterTokenizer",
@@ -186,7 +174,7 @@ void metapy_bind_analyzers(py::module& m)
         "Creates a tokenizer using the UTF text segmentation standard",
         // hack around g++ 4.8 ambiguous overloaded operator=
         py::arg_t<bool>{"suppress_tags", false});
-        //py::arg("suppress_tags") = false);
+    // py::arg("suppress_tags") = false);
 
     // filters
     py::class_<filters::alpha_filter>{m_ana, "AlphaFilter", ts_base}.def(
@@ -231,16 +219,15 @@ void metapy_bind_analyzers(py::module& m)
         .def("__init__", &make_token_stream<filters::sentence_boundary>);
 
     // analyzers
-    py::class_<py_analyzer> analyzer_base{m_ana, "Analyzer"};
-    analyzer_base.alias<analyzers::analyzer>()
-        .def(py::init<>())
+    py::class_<analyzers::analyzer, py_analyzer> analyzer_base{m_ana,
+                                                               "Analyzer"};
+    analyzer_base.def(py::init<>())
         .def("analyze", &analyzer::analyze<uint64_t>)
         .def("featurize", &analyzer::analyze<double>);
 
     py::class_<ngram_word_analyzer>{m_ana, "NGramWordAnalyzer", analyzer_base}
         .def("__init__",
-             [](ngram_word_analyzer& ana, uint16_t n, const token_stream& ts)
-             {
+             [](ngram_word_analyzer& ana, uint16_t n, const token_stream& ts) {
                  new (&ana) ngram_word_analyzer(n, ts.clone());
              })
         .def("analyze", &ngram_analyze<uint64_t>)
@@ -248,9 +235,8 @@ void metapy_bind_analyzers(py::module& m)
 
     py::class_<multi_analyzer>{m_ana, "MultiAnalyzer", analyzer_base};
 
-    m_ana.def("load", [](const std::string& filename)
-              {
-                  auto config = cpptoml::parse_file(filename);
-                  return analyzers::load(*config);
-              });
+    m_ana.def("load", [](const std::string& filename) {
+        auto config = cpptoml::parse_file(filename);
+        return analyzers::load(*config);
+    });
 }

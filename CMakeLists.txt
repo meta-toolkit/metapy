@@ -36,9 +36,10 @@ add_library(metapy SHARED src/metapy_analyzers.cpp
                           src/metapy_index.cpp
                           src/metapy_sequence.cpp
                           src/metapy_parser.cpp
+                          src/metapy_embeddings.cpp
                           src/metapy.cpp)
 target_link_libraries(metapy meta-index meta-ranker meta-sequence
-                      meta-greedy-tagger meta-parser)
+                      meta-greedy-tagger meta-parser meta-embeddings)
 
 # don't add a "lib" prefix to the metapy shared library
 set_target_properties(metapy PROPERTIES PREFIX "")
