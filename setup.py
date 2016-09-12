@@ -15,7 +15,7 @@ from distutils.spawn import find_executable
 from distutils import log, sysconfig
 from distutils.command import build
 
-VERSION = "0.0.1.dev7"
+VERSION = "0.0.1.dev8"
 
 # See:
 # http://stackoverflow.com/questions/3223604/how-to-create-a-temporary-directory-and-get-the-path-file-name-in-python
