@@ -76,7 +76,8 @@ class py_token_stream
      */
     virtual operator bool() const override
     {
-        PYBIND11_OVERLOAD_PURE(bool, analyzers::token_stream, operator bool,);
+        PYBIND11_OVERLOAD_PURE_NAME(bool, analyzers::token_stream,
+                                    "has_more", operator bool,);
         return false;
     }
 
@@ -157,6 +158,12 @@ void metapy_bind_analyzers(py::module& m)
              [](token_stream& ts, std::string str) {
                  ts.set_content(std::move(str));
              })
+        .def("__bool__", [](token_stream& ts) {
+            return static_cast<bool>(ts);
+        })
+        .def("__nonzero__", [](token_stream& ts) {
+            return static_cast<bool>(ts);
+        })
         .def("__iter__", [](token_stream& ts) -> token_stream& { return ts; })
         .def("__next__", [](token_stream& ts) {
             if (!ts)
