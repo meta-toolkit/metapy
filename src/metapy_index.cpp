@@ -226,8 +226,30 @@ void metapy_bind_index(py::module& m)
                  return ranker.score(idx, query, num_results, filter);
              },
              "Scores the documents in the inverted index with respect to the "
-             "query "
-             "using this ranker",
+             "query using this ranker",
+             py::arg("idx"), py::arg("query"), py::arg("num_results") = 10,
+             py::arg("filter")
+             = std::function<bool(doc_id)>([](doc_id) { return true; }))
+        .def("score",
+             [](index::ranker& ranker, index::inverted_index& idx,
+                std::unordered_map<std::string, double>& query,
+                uint64_t num_results,
+                const index::ranker::filter_function_type& filter) {
+                 return ranker.score(idx, query.begin(), query.end(),
+                                     num_results, filter);
+
+             },
+             py::arg("idx"), py::arg("query"), py::arg("num_results") = 10,
+             py::arg("filter")
+             = std::function<bool(doc_id)>([](doc_id) { return true; }))
+        .def("score",
+             [](index::ranker& ranker, index::inverted_index& idx,
+                std::vector<std::pair<std::string, double>>& query,
+                uint64_t num_results,
+                const index::ranker::filter_function_type& filter) {
+                 return ranker.score(idx, query.begin(), query.end(),
+                                     num_results, filter);
+             },
              py::arg("idx"), py::arg("query"), py::arg("num_results") = 10,
              py::arg("filter")
              = std::function<bool(doc_id)>([](doc_id) { return true; }))
