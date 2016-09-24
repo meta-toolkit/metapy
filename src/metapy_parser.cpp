@@ -142,14 +142,14 @@ void metapy_bind_parser(py::module& m)
                  return n.accept(vtor);
              });
 
-    py::class_<leaf_node>{m_parse, "LeafNode", py::base<node>()}
+    py::class_<leaf_node, node>{m_parse, "LeafNode"}
         .def(py::init<class_label, std::string>())
         .def("word", [](const leaf_node& ln)
              {
                  return *ln.word();
              });
 
-    py::class_<internal_node>{m_parse, "InternalNode", py::base<node>()}
+    py::class_<internal_node, node>{m_parse, "InternalNode"}
         .def("__init__",
              [](internal_node& n, class_label cat, py::list pylist)
              {

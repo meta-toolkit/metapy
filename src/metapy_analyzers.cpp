@@ -11,6 +11,7 @@
 #include <pybind11/stl.h>
 
 #include <algorithm>
+#include <mutex>
 
 #include "metapy_analyzers.h"
 #include "metapy_probe_map.h"
@@ -22,6 +23,7 @@
 #include "meta/analyzers/tokenizers/character_tokenizer.h"
 #include "meta/analyzers/tokenizers/icu_tokenizer.h"
 #include "meta/corpus/document.h"
+#include "meta/parallel/thread_pool.h"
 
 namespace py = pybind11;
 using namespace meta;
@@ -60,6 +62,10 @@ void for_each_token(InputIt first, InputIt last, const Delims& delims,
                    binary_op);
 }
 
+/**
+ * This class is a "trampoline" class to bounce functions back to Python
+ * if they are overloaded there rather than in C++ directly.
+ */
 class py_token_stream
     : public util::clonable<analyzers::token_stream, py_token_stream>
 {
@@ -77,7 +83,7 @@ class py_token_stream
     virtual operator bool() const override
     {
         PYBIND11_OVERLOAD_PURE_NAME(bool, analyzers::token_stream,
-                                    "has_more", operator bool,);
+                                    "__bool__", operator bool,);
         return false;
     }
 
@@ -91,6 +97,123 @@ class py_token_stream
                                std::move(content));
     }
 };
+
+/**
+ * This class holds a token_stream that was defined in Python, but was
+ * created using C++.
+ *
+ * This is where stuff gets weird. We want our tokenizer_factory to return
+ * std::unique_ptr<token_stream> when invoked with an id and a config
+ * group. The problem is that we don't have a good way to get a unique_ptr
+ * out of Python code if the token stream is defined there, since that
+ * basically entails having Python relinquish ownership of something, which
+ * it isn't apt to do.
+ *
+ * Instead, what we do is have a separate class that can wrap an object
+ * created by invoking Python code directly from C++. This doesn't give us
+ * a unique_ptr, but we can enforce that ourselves directly. The object
+ * will down convert nicely to a token_stream through pybind11's casting
+ * utilities, since it is still a token_stream derivative at heart. We just
+ * can't get at its unique_ptr. We store a py::object to keep the reference
+ * count > 0, and then a token_stream* that we do all of the actual work
+ * with. We have to override all of the virtual functions again, but that
+ * isn't too much work.
+ *
+ * Since we're not using the PYBIND11_OVERLOAD functions anymore (since
+ * this object isn't the one registered with Python), we have to be careful
+ * with the GIL. Each function here acquires the GIL immediately before
+ * doing anything else so that hitting Python is safely behind the lock.
+ * This means things are going to be a lot slower, of course, but it's the
+ * only way I can think of for doing this safely for now.
+ *
+ * We also want to be able to clone token_streams, since that's how we set
+ * up the pipeline replicas across all of the threads. We can do that by
+ * providing a copy constructor that calls into Python by invoking
+ * `copy.deepcopy(obj)` to copy our current Python object.
+ *
+ * Finally, our destructor is weird since we want to decrement the object's
+ * reference count while still inside the GIL.
+ */
+class cpp_created_py_token_stream
+    : public util::clonable<analyzers::token_stream,
+                            cpp_created_py_token_stream>
+{
+  public:
+    cpp_created_py_token_stream(py::object obj)
+        : obj_{obj}, stream_{obj_.cast<token_stream*>()}
+    {
+      // nothing
+    }
+
+    cpp_created_py_token_stream(const cpp_created_py_token_stream& other)
+    {
+        py::gil_scoped_acquire acq;
+        auto deepcopy = py::module::import("copy").attr("deepcopy");
+        obj_ = deepcopy.cast<py::function>()(other.obj_);
+        stream_ = obj_.cast<token_stream*>();
+    }
+
+    virtual std::string next() override
+    {
+        py::gil_scoped_acquire acq;
+        return stream_->next();
+    }
+
+    virtual operator bool() const override
+    {
+        py::gil_scoped_acquire acq;
+        return *stream_;
+    }
+
+    virtual void set_content(std::string&& content) override
+    {
+        py::gil_scoped_acquire acq;
+        stream_->set_content(std::move(content));
+    }
+
+    ~cpp_created_py_token_stream()
+    {
+        py::gil_scoped_acquire acq;
+        obj_.release().dec_ref();
+    }
+
+  private:
+    py::object obj_;
+    token_stream* stream_;
+};
+
+/**
+ * Registers a Python object with a factory.
+ *
+ * There are two major assumptions here. First, we assume that the *Class*
+ * object passed here has an "id" property, just like we assume the MeTA
+ * classes do in C++.
+ *
+ * We have to do a bit of trickery here, though. The factories typically
+ * map util::string_view to creation functions. This is fine in the C++
+ * code, since every id ends up being a static C string somewhere in the
+ * data segment. But here, the ids are in Python and are dynamically
+ * allocated. To save ourselves headache and prevent UB, we have a static
+ * function level cache here to store the strings we've added to the
+ * factories so that the util::string_view will be valid.
+ *
+ * There's probably a better way of doing this, but this currently works.
+ */
+template <class FactoryType, class CreationFunction>
+void py_factory_register(py::object cls, FactoryType& factory,
+                         CreationFunction&& c_fun)
+{
+    static std::vector<std::string> ids;
+    static std::mutex mut;
+    util::string_view id;
+    {
+        std::lock_guard<std::mutex> lock{mut};
+        ids.push_back(cls.attr("id").cast<std::string>());
+        id = ids.back();
+    }
+    std::cerr << "filter_factory adding " << id << std::endl;
+    factory.add(id, c_fun);
+}
 
 class py_analyzer : public util::clonable<analyzers::analyzer, py_analyzer>
 {
@@ -138,6 +261,79 @@ py::object ngram_analyze(analyzers::ngram_word_analyzer& ana,
     return ret;
 }
 
+/**
+ * A visitor class for converting a TOML configuration group to a Python
+ * dictionary. We use this to convert TOML tables to keyword arguments for
+ * token_streams defined in Python.
+ */
+class py_toml_visitor
+{
+  public:
+    template <class T>
+    void visit(const cpptoml::value<T>& v, py::object& obj)
+    {
+        obj = py::cast(v.get());
+    }
+
+    void visit(const cpptoml::table& table, py::object& obj)
+    {
+        obj = py::dict();
+        auto dict = obj.cast<py::dict>();
+
+        for (const auto& pr : table)
+        {
+            auto key = py::cast(pr.first);
+            py::object value;
+            pr.second->accept(*this, value);
+            dict[key] = value;
+        }
+    }
+
+    void visit(const cpptoml::array& arr, py::object& obj)
+    {
+        obj = py::list();
+        auto lst = obj.cast<py::list>();
+        for (const auto& val : arr)
+        {
+            py::object value;
+            val->accept(*this, value);
+            lst.append(value);
+        }
+    }
+
+    void visit(const cpptoml::table_array& tarr, py::object& obj)
+    {
+        obj = py::list();
+        auto lst = obj.cast<py::list>();
+        for (const auto& table : tarr)
+        {
+            py::object value;
+            table->accept(*this, value);
+            lst.append(value);
+        }
+    }
+};
+
+class py_token_stream_iterator
+{
+    analyzers::token_stream& stream_;
+    py::object ref_;
+
+  public:
+    py_token_stream_iterator(analyzers::token_stream& stream, py::object ref)
+        : stream_(stream), ref_(ref)
+    {
+        // nothing
+    }
+
+    std::string next()
+    {
+        if (!stream_)
+            throw py::stop_iteration();
+        return stream_.next();
+    }
+};
+
 void metapy_bind_analyzers(py::module& m)
 {
     using namespace analyzers;
@@ -152,24 +348,24 @@ void metapy_bind_analyzers(py::module& m)
                      throw py::stop_iteration();
                  return ts.next();
              })
-        .def("has_more",
-             [](const token_stream& ts) { return static_cast<bool>(ts); })
         .def("set_content",
              [](token_stream& ts, std::string str) {
                  ts.set_content(std::move(str));
              })
-        .def("__bool__", [](token_stream& ts) {
-            return static_cast<bool>(ts);
-        })
-        .def("__nonzero__", [](token_stream& ts) {
-            return static_cast<bool>(ts);
-        })
-        .def("__iter__", [](token_stream& ts) -> token_stream& { return ts; })
-        .def("__next__", [](token_stream& ts) {
-            if (!ts)
-                throw py::stop_iteration();
-            return ts.next();
-        });
+        .def("__bool__", [](token_stream& ts) { return static_cast<bool>(ts); })
+        .def("__iter__",
+             [](py::object ts) {
+                 return py_token_stream_iterator(ts.cast<token_stream&>(), ts);
+             })
+        .def("__deepcopy__",
+             [](token_stream& ts, py::dict&) { return ts.clone(); });
+
+    py::class_<py_token_stream_iterator>(ts_base, "Iterator")
+        .def("__iter__",
+             [](py_token_stream_iterator& it) -> py_token_stream_iterator& {
+                 return it;
+             })
+        .def("__next__", &py_token_stream_iterator::next);
 
     // tokenizers
     py::class_<tokenizers::character_tokenizer>{m_ana, "CharacterTokenizer",
@@ -245,5 +441,21 @@ void metapy_bind_analyzers(py::module& m)
     m_ana.def("load", [](const std::string& filename) {
         auto config = cpptoml::parse_file(filename);
         return analyzers::load(*config);
+    });
+
+    m_ana.def("register_filter", [](py::object cls) {
+        py_factory_register(cls, filter_factory::get(),
+                            [=](std::unique_ptr<token_stream> source,
+                                const cpptoml::table& cfg) {
+                                py::gil_scoped_acquire acq;
+
+                                py::dict kwargs;
+                                py_toml_visitor vtor;
+                                cfg.accept(vtor, kwargs);
+                                PyDict_DelItemString(kwargs.ptr(), "type");
+
+                                return make_unique<cpp_created_py_token_stream>(
+                                    cls(source->clone(), **kwargs));
+                            });
     });
 }

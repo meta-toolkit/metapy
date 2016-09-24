@@ -176,8 +176,8 @@ void metapy_bind_index(py::module& m)
         .def("get_term_id", &index::disk_index::get_term_id)
         .def("term_text", &index::disk_index::term_text);
 
-    py::class_<index::inverted_index, std::shared_ptr<index::inverted_index>>{
-        m_idx, "InvertedIndex", py::base<index::disk_index>{}}
+    py::class_<index::inverted_index, index::disk_index,
+               std::shared_ptr<index::inverted_index>>{m_idx, "InvertedIndex"}
         .def("tokenize", &index::inverted_index::tokenize)
         .def("doc_freq", &index::inverted_index::doc_freq)
         .def("term_freq", &index::inverted_index::term_freq)
@@ -188,6 +188,7 @@ void metapy_bind_index(py::module& m)
 
     m_idx.def("make_inverted_index",
               [](const std::string& filename) {
+                  py::gil_scoped_release rel;
                   auto config = cpptoml::parse_file(filename);
                   return index::make_index<index::inverted_index>(*config);
               },

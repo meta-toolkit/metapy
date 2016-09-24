@@ -9,10 +9,10 @@
  */
 
 #include "metapy_analyzers.h"
-#include "metapy_index.h"
-#include "metapy_sequence.h"
-#include "metapy_parser.h"
 #include "metapy_embeddings.h"
+#include "metapy_index.h"
+#include "metapy_parser.h"
+#include "metapy_sequence.h"
 
 namespace py = pybind11;
 
