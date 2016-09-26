@@ -82,8 +82,13 @@ class py_token_stream
      */
     virtual operator bool() const override
     {
+#if PY_MAJOR_VERSION < 3
+        PYBIND11_OVERLOAD_PURE_NAME(bool, analyzers::token_stream,
+                                    "__nonzero__", operator bool,);
+#else
         PYBIND11_OVERLOAD_PURE_NAME(bool, analyzers::token_stream,
                                     "__bool__", operator bool,);
+#endif
         return false;
     }
 
