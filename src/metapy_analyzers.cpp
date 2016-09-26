@@ -24,43 +24,10 @@
 #include "meta/analyzers/tokenizers/icu_tokenizer.h"
 #include "meta/corpus/document.h"
 #include "meta/parallel/thread_pool.h"
+#include "meta/util/algorithm.h"
 
 namespace py = pybind11;
 using namespace meta;
-
-/**
- * Applys the binary operator to each token in the range [first, last) that
- * is delimited a token in [s_first, s_last).
- *
- * @see http://tristanbrindle.com/posts/a-quicker-study-on-tokenising/
- */
-template <class InputIt, class ForwardIt, class BinOp>
-void for_each_token(InputIt first, InputIt last, ForwardIt s_first,
-                    ForwardIt s_last, BinOp binary_op)
-{
-    while (first != last)
-    {
-        const auto pos = std::find_first_of(first, last, s_first, s_last);
-        binary_op(first, pos);
-        if (pos == last)
-            break;
-        first = std::next(pos);
-    }
-}
-
-/**
- * Applys the binary operator to each token in the range [first, last) that
- * is delimited a token in delims.
- *
- * @see http://tristanbrindle.com/posts/a-quicker-study-on-tokenising/
- */
-template <class InputIt, class Delims, class BinOp>
-void for_each_token(InputIt first, InputIt last, const Delims& delims,
-                    BinOp binary_op)
-{
-    for_each_token(first, last, std::begin(delims), std::end(delims),
-                   binary_op);
-}
 
 /**
  * This class is a "trampoline" class to bounce functions back to Python
@@ -147,7 +114,7 @@ class cpp_created_py_token_stream
     cpp_created_py_token_stream(py::object obj)
         : obj_{obj}, stream_{obj_.cast<token_stream*>()}
     {
-      // nothing
+        // nothing
     }
 
     cpp_created_py_token_stream(const cpp_created_py_token_stream& other)
@@ -255,11 +222,11 @@ py::object ngram_analyze(analyzers::ngram_word_analyzer& ana,
 
         py::tuple newkey{ana.n_value()};
         uint64_t idx = 0;
-        for_each_token(key.begin(), key.end(), "_",
-                       [&](iterator first, iterator last) {
-                           if (first != last)
-                               newkey[idx++] = py::str({first, last});
-                       });
+        util::for_each_token(key.begin(), key.end(), "_",
+                             [&](iterator first, iterator last) {
+                                 if (first != last)
+                                     newkey[idx++] = py::str({first, last});
+                             });
         ret[newkey] = py::cast(kv.value());
     }
 
