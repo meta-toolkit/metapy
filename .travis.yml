@@ -32,6 +32,9 @@ matrix:
         - UNICODE_WIDTH=16
 
     - os: linux
+      env: VERSION=3.3
+
+    - os: linux
       env: VERSION=3.4
 
     - os: linux
