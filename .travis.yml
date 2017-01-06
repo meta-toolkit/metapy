@@ -18,6 +18,9 @@ matrix:
     - os: osx
       env: VERSION=3.5.1
 
+    - os: osx
+      env: VERSION=3.6.0
+
     - os: linux
       env: VERSION=2.7
 
@@ -31,6 +34,9 @@ matrix:
 
     - os: linux
       env: VERSION=3.5
+
+    - os: linux
+      env: VERSION=3.6
 
 install:
   - git submodule update --init --recursive
