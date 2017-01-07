@@ -11,12 +11,17 @@ matrix:
 
     - os: osx
       env: VERSION=3.3.5
+      # OSX 10.11 doesn't work with the MacPython 3.3 installer
+      osx_image: xcode6.4
 
     - os: osx
       env: VERSION=3.4.4
 
     - os: osx
       env: VERSION=3.5.1
+
+    - os: osx
+      env: VERSION=3.6.0
 
     - os: linux
       env: VERSION=2.7
@@ -27,10 +32,16 @@ matrix:
         - UNICODE_WIDTH=16
 
     - os: linux
+      env: VERSION=3.3
+
+    - os: linux
       env: VERSION=3.4
 
     - os: linux
       env: VERSION=3.5
+
+    - os: linux
+      env: VERSION=3.6
 
 install:
   - git submodule update --init --recursive
