@@ -15,6 +15,7 @@
 #include "metapy_index.h"
 
 #include "cpptoml.h"
+#include "meta/index/eval/ir_eval.h"
 #include "meta/index/inverted_index.h"
 #include "meta/index/make_index.h"
 #include "meta/index/ranker/all.h"
@@ -281,4 +282,54 @@ void metapy_bind_index(py::module& m)
         py::arg("k1") = index::okapi_bm25::default_k1,
         py::arg("b") = index::okapi_bm25::default_b,
         py::arg("k3") = index::okapi_bm25::default_k3);
+
+    py::class_<index::ir_eval>{m_idx, "IREval"}
+        .def("__init__",
+             [](index::ir_eval& ev, const std::string& cfg_path) {
+                 new (&ev) index::ir_eval(*cpptoml::parse_file(cfg_path));
+             })
+        .def("precision",
+             [](const index::ir_eval& ev,
+                const index::ir_eval::result_type& results, query_id q_id,
+                uint64_t num_docs) {
+                 return ev.precision(results, q_id, num_docs);
+             },
+             "Return precision = (#relevant_retrieved / #retrieved)",
+             py::arg("results"), py::arg("q_id"),
+             py::arg("num_docs") = std::numeric_limits<uint64_t>::max())
+        .def("recall",
+             [](const index::ir_eval& ev,
+                const index::ir_eval::result_type& results, query_id q_id,
+                uint64_t num_docs) {
+                 return ev.recall(results, q_id, num_docs);
+             },
+             "Return recall = (#relevant_retrieved / #relevant)",
+             py::arg("results"), py::arg("q_id"),
+             py::arg("num_docs") = std::numeric_limits<uint64_t>::max())
+        .def("f1",
+             [](const index::ir_eval& ev,
+                const index::ir_eval::result_type& results, query_id q_id,
+                uint64_t num_docs,
+                double beta) { return ev.f1(results, q_id, num_docs, beta); },
+             "Return F1 score, a balance between precision and recall",
+             py::arg("results"), py::arg("q_id"),
+             py::arg("num_docs") = std::numeric_limits<uint64_t>::max(),
+             py::arg("beta") = 1.0)
+        .def("ndcg",
+             [](const index::ir_eval& ev,
+                const index::ir_eval::result_type& results, query_id q_id,
+                uint64_t num_docs) { return ev.ndcg(results, q_id, num_docs); },
+             "Return normalized discounted cumulative gain score",
+             py::arg("results"), py::arg("q_id"),
+             py::arg("num_docs") = std::numeric_limits<uint64_t>::max())
+        .def("avg_p",
+             [](index::ir_eval& ev, const index::ir_eval::result_type& results,
+                query_id q_id, uint64_t num_docs) {
+                 return ev.avg_p(results, q_id, num_docs);
+             },
+             "Return average precision", py::arg("results"), py::arg("q_id"),
+             py::arg("num_docs") = std::numeric_limits<uint64_t>::max())
+        .def("map", &index::ir_eval::map)
+        .def("gmap", &index::ir_eval::gmap)
+        .def("reset_stats", &index::ir_eval::reset_stats);
 }
