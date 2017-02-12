@@ -1,0 +1,4 @@
+[[analyzers]]
+method = "ngram-word"
+ngram = 1
+filter = [{type = "icu-tokenizer"}, {type = "lowercase"}]
