@@ -34,26 +34,29 @@ void metapy_bind_embeddings(py::module& m)
              })
         .def("term", [](embeddings::word_embeddings& self,
                         std::size_t tid) { return self.term(tid).to_string(); })
-        .def("top_k", [](embeddings::word_embeddings& self,
-                         py::array_t<double,
-                                     py::array::c_style | py::array::forcecast>
-                             query,
-                         std::size_t k) {
-            util::array_view<const double> avquery{query.data(), query.size()};
-            auto scores = self.top_k(avquery, k);
+        .def("top_k",
+             [](embeddings::word_embeddings& self,
+                py::array_t<double, py::array::c_style | py::array::forcecast>
+                    query,
+                std::size_t k) {
+                 util::array_view<const double> avquery{query.data(),
+                                                        query.size()};
+                 auto scores = self.top_k(avquery, k);
 
-            std::vector<py::tuple> result;
-            result.reserve(scores.size());
+                 std::vector<py::tuple> result;
+                 result.reserve(scores.size());
 
-            std::transform(
-                scores.begin(), scores.end(), std::back_inserter(result),
-                [](const embeddings::scored_embedding& se) {
-                    return py::make_tuple(
-                        se.e.tid, py::array(se.e.v.size(), se.e.v.begin()),
-                        se.score);
-                });
-            return result;
-        }, "query"_a, "k"_a = 100);
+                 std::transform(
+                     scores.begin(), scores.end(), std::back_inserter(result),
+                     [](const embeddings::scored_embedding& se) {
+                         return py::make_tuple(
+                             se.e.tid, py::array(se.e.v.size(), se.e.v.begin()),
+                             se.score);
+                     });
+                 return result;
+             },
+             "query"_a, "k"_a = 100)
+        .def("vector_size", &embeddings::word_embeddings::vector_size);
 
     m_emb.def("load_embeddings", [](const std::string& filename) {
         auto config = cpptoml::parse_file(filename);
