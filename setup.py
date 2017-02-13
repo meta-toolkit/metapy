@@ -56,7 +56,8 @@ class CMakeBuildExt(build.build):
             raise EnvironmentError("Could not find cmake executable")
 
         py_version = "{}.{}".format(sys.version_info[0], sys.version_info[1])
-        cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release"]
+        cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release",
+                     "-DMETA_STATIC_UTF=On"]
 
         if platform.system() == 'Windows':
             cmake_cmd.append("-DMETAPY_PYTHON_VERSION={}".format(py_version))
