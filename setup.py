@@ -33,7 +33,16 @@ def cd(newdir, cleanup=lambda: True):
 def tempdir():
     dirpath = tempfile.mkdtemp()
     def cleanup():
-        shutil.rmtree(dirpath)
+        # see http://stackoverflow.com/questions/2656322/shutil-rmtree-fails-on-windows-with-access-is-denied
+        def onerror(func, path, exc_info):
+            import stat
+            if not os.access(path, os.W_OK):
+                os.chmod(path, stat.S_IWUSR)
+                func(path)
+            else:
+                raise
+
+        shutil.rmtree(dirpath, onerror=onerror)
     with cd(dirpath, cleanup):
         yield dirpath
 
