@@ -8,7 +8,7 @@ import time
 
 import metapy
 
-class PL2Ranker(metapy.index.Ranker):
+class PL2Ranker(metapy.index.RankingFunction):
     """
     Create a new ranking function in Python that can be used in MeTA
     """

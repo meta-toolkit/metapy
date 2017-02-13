@@ -16,23 +16,25 @@
 
 #include "cpptoml.h"
 #include "meta/index/eval/ir_eval.h"
+#include "meta/index/forward_index.h"
 #include "meta/index/inverted_index.h"
 #include "meta/index/make_index.h"
 #include "meta/index/ranker/all.h"
+#include "meta/index/ranker/ranker_factory.h"
 #include "meta/index/score_data.h"
 
 namespace py = pybind11;
 
 using namespace meta;
 
-class py_ranker : public index::ranker
+class py_ranking_function : public index::ranking_function
 {
   public:
-    using index::ranker::ranker;
+    using index::ranking_function::ranking_function;
 
     float score_one(const meta::index::score_data& sd) override
     {
-        PYBIND11_OVERLOAD_PURE(float, index::ranker, score_one, sd);
+        PYBIND11_OVERLOAD_PURE(float, index::ranking_function, score_one, sd);
         return 0.0f;
     }
 
@@ -159,8 +161,6 @@ void metapy_bind_index(py::module& m)
     py::class_<index::disk_index>{m_idx, "DiskIndex"}
         .def("index_name", &index::disk_index::index_name)
         .def("num_docs", &index::disk_index::num_docs)
-        .def("doc_name", &index::disk_index::doc_name)
-        .def("doc_path", &index::disk_index::doc_path)
         .def("docs", &index::disk_index::docs)
         .def("doc_size", &index::disk_index::doc_size)
         .def("label", &index::disk_index::label)
@@ -168,7 +168,8 @@ void metapy_bind_index(py::module& m)
         .def("class_label_from_id", &index::disk_index::class_label_from_id)
         .def("num_labels", &index::disk_index::num_labels)
         .def("class_labels", &index::disk_index::class_labels)
-        .def("metadata", &index::disk_index::metadata,
+        .def("metadata", [](index::disk_index& idx,
+                            doc_id d_id) { return idx.metadata(d_id); },
              "Extract the metadata for a document", py::keep_alive<0, 1>())
         .def("unique_terms",
              [](const index::disk_index& idx) { return idx.unique_terms(); })
@@ -195,32 +196,19 @@ void metapy_bind_index(py::module& m)
               },
               "Builds or loads an inverted index from disk");
 
-    py::class_<index::score_data>{m_idx, "ScoreData"}
-        .def(py::init<index::inverted_index&, float, uint64_t, uint64_t,
-                      float>())
-        .def_property_readonly(
-            "idx",
-            [](index::score_data& sd) -> index::inverted_index& {
-                return sd.idx;
-            })
-        .def_readwrite("avg_dl", &index::score_data::avg_dl)
-        .def_readwrite("num_docs", &index::score_data::num_docs)
-        .def_readwrite("total_terms", &index::score_data::total_terms)
-        .def_readwrite("query_length", &index::score_data::query_length)
-        .def_readwrite("t_id", &index::score_data::t_id)
-        .def_readwrite("query_term_weight",
-                       &index::score_data::query_term_weight)
-        .def_readwrite("doc_count", &index::score_data::doc_count)
-        .def_readwrite("corpus_term_count",
-                       &index::score_data::corpus_term_count)
-        .def_readwrite("d_id", &index::score_data::d_id)
-        .def_readwrite("doc_term_count", &index::score_data::doc_term_count)
-        .def_readwrite("doc_size", &index::score_data::doc_size)
-        .def_readwrite("doc_unique_terms",
-                       &index::score_data::doc_unique_terms);
+    py::class_<index::forward_index, index::disk_index,
+               std::shared_ptr<index::forward_index>>{m_idx, "ForwardIndex"}
+        .def("liblinear_data", &index::forward_index::liblinear_data)
+        .def("tokenize", &index::forward_index::tokenize);
 
-    py::class_<index::ranker, py_ranker> rank_base{m_idx, "Ranker"};
-    rank_base.def(py::init<>())
+    m_idx.def("make_forward_index", [](const std::string& filename) {
+        py::gil_scoped_release rel;
+        auto config = cpptoml::parse_file(filename);
+        return index::make_index<index::forward_index>(*config);
+    });
+
+    py::class_<index::ranker> rank_base{m_idx, "Ranker"};
+    rank_base
         .def("score",
              [](index::ranker& ranker, index::inverted_index& idx,
                 const corpus::document& query, uint64_t num_results,
@@ -254,11 +242,40 @@ void metapy_bind_index(py::module& m)
              },
              py::arg("idx"), py::arg("query"), py::arg("num_results") = 10,
              py::arg("filter")
-             = std::function<bool(doc_id)>([](doc_id) { return true; }))
-        .def("score_one", &index::ranker::score_one);
+             = std::function<bool(doc_id)>([](doc_id) { return true; }));
+
+    py::class_<index::score_data>{m_idx, "ScoreData"}
+        .def(py::init<index::inverted_index&, float, uint64_t, uint64_t,
+                      float>())
+        .def_property_readonly(
+            "idx",
+            [](index::score_data& sd) -> index::inverted_index& {
+                return sd.idx;
+            })
+        .def_readwrite("avg_dl", &index::score_data::avg_dl)
+        .def_readwrite("num_docs", &index::score_data::num_docs)
+        .def_readwrite("total_terms", &index::score_data::total_terms)
+        .def_readwrite("query_length", &index::score_data::query_length)
+        .def_readwrite("t_id", &index::score_data::t_id)
+        .def_readwrite("query_term_weight",
+                       &index::score_data::query_term_weight)
+        .def_readwrite("doc_count", &index::score_data::doc_count)
+        .def_readwrite("corpus_term_count",
+                       &index::score_data::corpus_term_count)
+        .def_readwrite("d_id", &index::score_data::d_id)
+        .def_readwrite("doc_term_count", &index::score_data::doc_term_count)
+        .def_readwrite("doc_size", &index::score_data::doc_size)
+        .def_readwrite("doc_unique_terms",
+                       &index::score_data::doc_unique_terms);
+
+    py::class_<index::ranking_function, py_ranking_function> rf_base{
+        m_idx, "RankingFunction", rank_base};
+
+    rf_base.def(py::init<>())
+        .def("score_one", &index::ranking_function::score_one);
 
     py::class_<index::language_model_ranker, py_lm_ranker> lm_rank_base{
-        m_idx, "LanguageModelRanker", rank_base};
+        m_idx, "LanguageModelRanker", rf_base};
     lm_rank_base.def(py::init<>());
 
     py::class_<index::absolute_discount>{m_idx, "AbsoluteDiscount",
@@ -274,14 +291,72 @@ void metapy_bind_index(py::module& m)
         py::init<float>(),
         py::arg("lambda") = index::jelinek_mercer::default_lambda);
 
-    py::class_<index::pivoted_length>{m_idx, "PivotedLength", rank_base}.def(
+    py::class_<index::pivoted_length>{m_idx, "PivotedLength", rf_base}.def(
         py::init<float>(), py::arg("s") = index::pivoted_length::default_s);
 
-    py::class_<index::okapi_bm25>{m_idx, "OkapiBM25", rank_base}.def(
+    py::class_<index::okapi_bm25>{m_idx, "OkapiBM25", rf_base}.def(
         py::init<float, float, float>(),
         py::arg("k1") = index::okapi_bm25::default_k1,
         py::arg("b") = index::okapi_bm25::default_b,
         py::arg("k3") = index::okapi_bm25::default_k3);
+
+    py::class_<index::kl_divergence_prf>{m_idx, "KLDivergencePRF", rank_base}
+        .def(py::init<std::shared_ptr<index::forward_index>>())
+        .def("__init__",
+             [](index::kl_divergence_prf& kl_div,
+                std::shared_ptr<index::forward_index> fwd,
+                index::language_model_ranker& lm_ranker, float alpha,
+                float lambda, uint64_t k, uint64_t max_terms) {
+                 //
+                 // TODO: make this less of an absolute hack; will need API
+                 // changes in MeTA
+                 //
+                 // Ideally make ranker subclass util::clonable
+                 //
+                 std::stringstream ss;
+                 lm_ranker.save(ss);
+                 cpptoml::parser parser{ss};
+                 auto cfg = parser.parse();
+                 auto lm_ranker_clone = index::make_lm_ranker(*cfg);
+
+                 new (&kl_div)
+                     index::kl_divergence_prf(fwd, std::move(lm_ranker_clone),
+                                              alpha, lambda, k, max_terms);
+             },
+             py::arg("fwd"), py::arg("lm_ranker"),
+             py::arg("alpha") = index::kl_divergence_prf::default_alpha,
+             py::arg("lambda") = index::kl_divergence_prf::default_lambda,
+             py::arg("k") = index::kl_divergence_prf::default_k,
+             py::arg("max_terms")
+             = index::kl_divergence_prf::default_max_terms);
+
+    py::class_<index::rocchio>{m_idx, "Rocchio", rank_base}
+        .def(py::init<std::shared_ptr<index::forward_index>>())
+        .def("__init__",
+             [](index::rocchio& rocchio,
+                std::shared_ptr<index::forward_index> fwd,
+                index::ranker& initial_ranker, float alpha, float beta,
+                uint64_t k, uint64_t max_terms) {
+                 //
+                 // TODO: make this less of an absolute hack; will need API
+                 // changes in MeTA
+                 //
+                 // Ideally make ranker subclass util::clonable
+                 //
+                 std::stringstream ss;
+                 initial_ranker.save(ss);
+                 cpptoml::parser parser{ss};
+                 auto cfg = parser.parse();
+                 auto ranker_clone = index::make_ranker(*cfg);
+
+                 new (&rocchio) index::rocchio(fwd, std::move(ranker_clone),
+                                               alpha, beta, k, max_terms);
+             },
+             py::arg("fwd"), py::arg("initial_ranker"),
+             py::arg("alpha") = index::rocchio::default_alpha,
+             py::arg("beta") = index::rocchio::default_beta,
+             py::arg("k") = index::rocchio::default_k,
+             py::arg("max_terms") = index::rocchio::default_max_terms);
 
     py::class_<index::ir_eval>{m_idx, "IREval"}
         .def("__init__",
