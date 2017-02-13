@@ -32,8 +32,8 @@ struct probe_map_caster
         dict d{src, true};
         if (!d.check())
             return false;
-        key_conv kconv;
-        value_conv vconv;
+        make_caster<Key> kconv;
+        make_caster<Value> vconv;
         value.clear();
         for (auto it : d)
         {
@@ -51,8 +51,10 @@ struct probe_map_caster
         dict d;
         for (const auto& kv : src)
         {
-            object key{key_conv::cast(kv.key(), policy, parent), false};
-            object value{value_conv::cast(kv.value(), policy, parent), false};
+            auto key = reinterpret_steal<object>(
+                make_caster<Key>::cast(kv.key(), policy, parent));
+            auto value = reinterpret_steal<object>(
+                make_caster<Value>::cast(kv.value(), policy, parent));
             if (!key || !value)
                 return handle{};
             d[key] = value;

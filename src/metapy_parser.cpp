@@ -8,8 +8,8 @@
 
 #include <cmath>
 
-#include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include <sstream>
@@ -21,9 +21,9 @@
 #include "meta/parser/trees/visitors/binarizer.h"
 #include "meta/parser/trees/visitors/debinarizer.h"
 #include "meta/parser/trees/visitors/empty_remover.h"
-#include "meta/parser/trees/visitors/unary_chain_remover.h"
 #include "meta/parser/trees/visitors/head_finder.h"
 #include "meta/parser/trees/visitors/leaf_node_finder.h"
+#include "meta/parser/trees/visitors/unary_chain_remover.h"
 
 #include "meta/parser/sequence_extractor.h"
 #include "meta/parser/sr_parser.h"
@@ -137,22 +137,17 @@ void metapy_bind_parser(py::module& m)
         .def("is_leaf", &node::is_leaf)
         .def("is_temporary", &node::is_temporary)
         .def("equal", &node::equal)
-        .def("accept", [](node& n, parser::visitor<py::object>& vtor)
-             {
-                 return n.accept(vtor);
-             });
+        .def("accept", [](node& n, parser::visitor<py::object>& vtor) {
+            return n.accept(vtor);
+        });
 
     py::class_<leaf_node, node>{m_parse, "LeafNode"}
         .def(py::init<class_label, std::string>())
-        .def("word", [](const leaf_node& ln)
-             {
-                 return *ln.word();
-             });
+        .def("word", [](const leaf_node& ln) { return *ln.word(); });
 
     py::class_<internal_node, node>{m_parse, "InternalNode"}
         .def("__init__",
-             [](internal_node& n, class_label cat, py::list pylist)
-             {
+             [](internal_node& n, class_label cat, py::list pylist) {
                  std::vector<std::unique_ptr<node>> children(pylist.size());
                  for (std::size_t i = 0; i < pylist.size(); ++i)
                      children[i] = pylist[i].cast<node&>().clone();
@@ -160,80 +155,57 @@ void metapy_bind_parser(py::module& m)
                  new (&n) internal_node(std::move(cat), std::move(children));
              })
         .def(py::init<const internal_node&>())
-        .def("add_child",
-             [](internal_node& n, const node& child)
-             {
-                 n.add_child(child.clone());
-             })
+        .def("add_child", [](internal_node& n,
+                             const node& child) { n.add_child(child.clone()); })
         .def("num_children", &internal_node::num_children)
         .def("child", &internal_node::child, py::keep_alive<0, 1>())
-        .def("head_lexicon",
-             [](internal_node& n)
-             {
-                 return n.head_lexicon();
-             },
+        .def("head_lexicon", [](internal_node& n) { return n.head_lexicon(); },
              py::keep_alive<0, 1>())
         .def("head_lexicon",
-             [](internal_node& n, const leaf_node* descendent)
-             {
+             [](internal_node& n, const leaf_node* descendent) {
                  n.head_lexicon(descendent);
              })
         .def("head_constituent",
-             [](internal_node& n)
-             {
-                 return n.head_constituent();
-             },
+             [](internal_node& n) { return n.head_constituent(); },
              py::keep_alive<0, 1>())
         .def("head_constituent",
-             [](internal_node& n, const node* descendent)
-             {
+             [](internal_node& n, const node* descendent) {
                  n.head_constituent(descendent);
              })
-        .def("each_child", [](internal_node& n, std::function<void(node*)> fn)
-             {
-                 n.each_child(fn);
-             });
+        .def("each_child", [](internal_node& n, std::function<void(node*)> fn) {
+            n.each_child(fn);
+        });
 
     py::class_<parse_tree>{m_parse, "ParseTree"}
         .def("__init__",
-             [](parse_tree& tree, const node& n)
-             {
+             [](parse_tree& tree, const node& n) {
                  new (&tree) parse_tree(n.clone());
              })
         .def(py::init<const parse_tree&>())
         .def("__str__",
-             [](const parse_tree& tree)
-             {
+             [](const parse_tree& tree) {
                  std::stringstream ss;
                  ss << tree;
                  return ss.str();
              })
         .def("pretty_str",
-             [](const parse_tree& tree)
-             {
+             [](const parse_tree& tree) {
                  std::stringstream ss;
                  tree.pretty_print(ss);
                  return ss.str();
              })
-        .def("visit", [](parse_tree& tree, parser::visitor<py::object>& vtor)
-             {
-                 return tree.visit(vtor);
-             });
+        .def("visit", [](parse_tree& tree, parser::visitor<py::object>& vtor) {
+            return tree.visit(vtor);
+        });
 
     py::implicitly_convertible<node, parse_tree>();
 
     py::class_<visitor<py::object>, py_visitor> vtorbase{m_parse, "Visitor"};
-    vtorbase
-        .def(py::init<>())
+    vtorbase.def(py::init<>())
         .def("visit_leaf",
-             [](visitor<py::object>& vtor, leaf_node& ln)
-             {
-                 return vtor(ln);
-             })
-        .def("visit_internal", [](visitor<py::object>& vtor, internal_node& in)
-             {
-                 return vtor(in);
-             });
+             [](visitor<py::object>& vtor, leaf_node& ln) { return vtor(ln); })
+        .def("visit_internal", [](visitor<py::object>& vtor,
+                                  internal_node& in) { return vtor(in); });
 
     py::class_<visitor_wrapper<annotation_remover>>{
         m_parse, "AnnotationRemover", vtorbase}
@@ -254,33 +226,30 @@ void metapy_bind_parser(py::module& m)
     py::class_<visitor_wrapper<leaf_node_finder>>{m_parse, "LeafNodeFinder",
                                                   vtorbase}
         .def(py::init<>())
-        .def("leaves", [](visitor_wrapper<leaf_node_finder>& lnf)
-             {
-                 // need to manually create the py::list here since the
-                 // pybind11 caster for vector operates on a const vector,
-                 // not a mutable one
-                 auto leaves = lnf.visitor().leaves();
+        .def("leaves", [](visitor_wrapper<leaf_node_finder>& lnf) {
+            // need to manually create the py::list here since the
+            // pybind11 caster for vector operates on a const vector,
+            // not a mutable one
+            auto leaves = lnf.visitor().leaves();
 
-                 py::list ret(leaves.size());
-                 for (std::size_t i = 0; i < leaves.size(); ++i)
-                 {
-                     ret[i] = py::object(
-                         py::detail::type_caster<std::unique_ptr<leaf_node>>::
-                             cast(std::move(leaves[i]),
-                                  py::return_value_policy::automatic_reference,
-                                  py::handle()),
-                         false);
-                 }
-                 return ret;
-             });
+            py::list ret(leaves.size());
+            for (std::size_t i = 0; i < leaves.size(); ++i)
+            {
+                ret[i] = py::reinterpret_steal<py::object>(
+                    py::detail::type_caster<std::unique_ptr<leaf_node>>::cast(
+                        std::move(leaves[i]),
+                        py::return_value_policy::automatic_reference,
+                        py::handle()));
+            }
+            return ret;
+        });
 
     py::class_<visitor_wrapper<sequence_extractor>>{
         m_parse, "SequenceExtractor", vtorbase}
         .def(py::init<>())
-        .def("sequence", [](visitor_wrapper<sequence_extractor>& vtor)
-             {
-                 return vtor.visitor().sequence();
-             });
+        .def("sequence", [](visitor_wrapper<sequence_extractor>& vtor) {
+            return vtor.visitor().sequence();
+        });
 
     py::class_<evalb>{m_parse, "EvalB"}
         .def(py::init<>())
@@ -295,22 +264,19 @@ void metapy_bind_parser(py::module& m)
         .def("zero_crossing", &evalb::zero_crossing)
         .def("add_tree", &evalb::add_tree);
 
-    m_parse.def("extract_trees_from_file", [](const std::string& filename)
-                {
-                    return parser::io::extract_trees(filename);
-                });
+    m_parse.def("extract_trees_from_file", [](const std::string& filename) {
+        return parser::io::extract_trees(filename);
+    });
 
-    m_parse.def("extract_trees", [](const std::string& input)
-                {
-                    std::stringstream ss{input};
-                    return parser::io::extract_trees(ss);
-                });
+    m_parse.def("extract_trees", [](const std::string& input) {
+        std::stringstream ss{input};
+        return parser::io::extract_trees(ss);
+    });
 
-    m_parse.def("read_tree", [](const std::string& input)
-                {
-                    std::stringstream ss{input};
-                    return parser::io::extract_trees(ss).at(0);
-                });
+    m_parse.def("read_tree", [](const std::string& input) {
+        std::stringstream ss{input};
+        return parser::io::extract_trees(ss).at(0);
+    });
 
     py::class_<sr_parser> parser{m_parse, "Parser"};
 
