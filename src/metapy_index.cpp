@@ -158,7 +158,8 @@ void metapy_bind_index(py::module& m)
         },
         "Returns the metadata value for a given field name");
 
-    py::class_<index::disk_index>{m_idx, "DiskIndex"}
+    py::class_<index::disk_index, std::shared_ptr<index::disk_index>>{
+        m_idx, "DiskIndex"}
         .def("index_name", &index::disk_index::index_name)
         .def("num_docs", &index::disk_index::num_docs)
         .def("docs", &index::disk_index::docs)
