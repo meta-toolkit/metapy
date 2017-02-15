@@ -7,7 +7,7 @@ query-judgements = "qrels.txt"
 [[analyzers]]
 method = "ngram-word"
 ngram = 1
-filter = [{type = "icu-tokenizer"}, {type = "lowercase"}]
+filter = [{type = "icu-tokenizer", suppress-tags = true}, {type = "lowercase"}]
 
 [ranker]
 method = "bm25"
