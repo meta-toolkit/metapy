@@ -316,9 +316,7 @@ void metapy_bind_index(py::module& m)
                  //
                  std::stringstream ss;
                  lm_ranker.save(ss);
-                 cpptoml::parser parser{ss};
-                 auto cfg = parser.parse();
-                 auto lm_ranker_clone = index::make_lm_ranker(*cfg);
+                 auto lm_ranker_clone = index::load_lm_ranker(ss);
 
                  new (&kl_div)
                      index::kl_divergence_prf(fwd, std::move(lm_ranker_clone),
@@ -346,9 +344,7 @@ void metapy_bind_index(py::module& m)
                  //
                  std::stringstream ss;
                  initial_ranker.save(ss);
-                 cpptoml::parser parser{ss};
-                 auto cfg = parser.parse();
-                 auto ranker_clone = index::make_ranker(*cfg);
+                 auto ranker_clone = index::load_ranker(ss);
 
                  new (&rocchio) index::rocchio(fwd, std::move(ranker_clone),
                                                alpha, beta, k, max_terms);
