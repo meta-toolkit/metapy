@@ -14,6 +14,7 @@
 #include "cpptoml.h"
 #include "meta/embeddings/word_embeddings.h"
 #include "metapy_embeddings.h"
+#include "metapy_identifiers.h"
 
 namespace py = pybind11;
 using namespace meta;

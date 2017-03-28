@@ -17,6 +17,9 @@
 #include "meta/sequence/perceptron.h"
 #include "meta/sequence/sequence.h"
 
+#include "metapy_identifiers.h"
+#include "metapy_sequence.h"
+
 namespace py = pybind11;
 using namespace meta;
 
@@ -56,14 +59,20 @@ void metapy_bind_sequence(py::module& m)
         .def("add_observation", &sequence::sequence::add_observation)
         .def("add_symbol", &sequence::sequence::add_symbol)
         .def("__getitem__",
-             [](sequence::sequence& seq, sequence::sequence::size_type idx) {
+             [](sequence::sequence& seq, int64_t offset) {
+                 std::size_t idx = offset >= 0
+                                       ? static_cast<std::size_t>(offset)
+                                       : seq.size() + offset;
                  if (idx >= seq.size())
                      throw py::index_error();
                  return seq[idx];
              })
         .def("__setitem__",
-             [](sequence::sequence& seq, sequence::sequence::size_type idx,
+             [](sequence::sequence& seq, int64_t offset,
                 sequence::observation obs) {
+                 std::size_t idx = offset >= 0
+                                       ? static_cast<std::size_t>(offset)
+                                       : seq.size() + offset;
                  if (idx >= seq.size())
                      throw py::index_error();
                  seq[idx] = std::move(obs);

@@ -30,6 +30,7 @@
 
 #include "meta/parser/io/ptb_reader.h"
 
+#include "metapy_identifiers.h"
 #include "metapy_parser.h"
 
 namespace py = pybind11;
@@ -143,6 +144,7 @@ void metapy_bind_parser(py::module& m)
 
     py::class_<leaf_node, node>{m_parse, "LeafNode"}
         .def(py::init<class_label, std::string>())
+        .def(py::init<const leaf_node&>())
         .def("word", [](const leaf_node& ln) { return *ln.word(); });
 
     py::class_<internal_node, node>{m_parse, "InternalNode"}
@@ -172,9 +174,28 @@ void metapy_bind_parser(py::module& m)
              [](internal_node& n, const node* descendent) {
                  n.head_constituent(descendent);
              })
-        .def("each_child", [](internal_node& n, std::function<void(node*)> fn) {
-            n.each_child(fn);
-        });
+        // weirdness: need to ensure that the child nodes passed down to
+        // the python lambda preserve the lifetime of the current internal
+        // node in case they are stored internally
+        .def("each_child",
+             [](internal_node& n, py::function fn) {
+                 n.each_child([&](node* child) {
+                     auto handle = py::cast(
+                         *child, py::return_value_policy::reference_internal,
+                         py::cast(n));
+                     fn(handle);
+                 });
+             })
+        .def("__getitem__",
+             [](internal_node& n, int64_t offset) {
+                 uint64_t idx = offset >= 0 ? static_cast<uint64_t>(offset)
+                                            : n.num_children() + offset;
+                 if (idx >= n.num_children())
+                     throw py::index_error();
+                 return n.child(idx);
+             },
+             py::keep_alive<0, 1>())
+        .def("__len__", &internal_node::num_children);
 
     py::class_<parse_tree>{m_parse, "ParseTree"}
         .def("__init__",
@@ -194,9 +215,14 @@ void metapy_bind_parser(py::module& m)
                  tree.pretty_print(ss);
                  return ss.str();
              })
-        .def("visit", [](parse_tree& tree, parser::visitor<py::object>& vtor) {
-            return tree.visit(vtor);
-        });
+        // keep_alive here is to ensure that the visitor keeps the tree
+        // alive as long as it is still referenced, since it might hold an
+        // internal pointer into the tree
+        .def("visit",
+             [](parse_tree& tree, parser::visitor<py::object>& vtor) {
+                 return tree.visit(vtor);
+             },
+             py::keep_alive<2, 1>());
 
     py::implicitly_convertible<node, parse_tree>();
 

@@ -14,6 +14,7 @@
 #include <mutex>
 
 #include "metapy_analyzers.h"
+#include "metapy_identifiers.h"
 #include "metapy_probe_map.h"
 
 #include "cpptoml.h"
