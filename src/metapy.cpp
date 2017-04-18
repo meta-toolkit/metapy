@@ -9,8 +9,10 @@
  */
 
 #include "metapy_analyzers.h"
+#include "metapy_classify.h"
 #include "metapy_embeddings.h"
 #include "metapy_index.h"
+#include "metapy_learn.h"
 #include "metapy_parser.h"
 #include "metapy_sequence.h"
 #include "metapy_topics.h"
@@ -23,6 +25,8 @@ PYBIND11_PLUGIN(metapy)
 
     metapy_bind_index(m);
     metapy_bind_analyzers(m);
+    metapy_bind_learn(m);
+    metapy_bind_classify(m);
     metapy_bind_sequence(m);
     metapy_bind_parser(m);
     metapy_bind_embeddings(m);
