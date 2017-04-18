@@ -164,6 +164,15 @@ void metapy_bind_classify(py::module& m)
                       std::function<bool(doc_id)>>())
         .def("label", &classify::binary_dataset::label)
         .def("__getitem__",
+             [](const classify::binary_dataset& dset, int64_t offset) {
+                 std::size_t idx = offset >= 0
+                                       ? static_cast<std::size_t>(offset)
+                                       : dset.size() + offset;
+                 if (idx >= dset.size())
+                     throw py::index_error();
+                 return *(dset.begin() + idx);
+             })
+        .def("__getitem__",
              [](const classify::binary_dataset& bdset, py::slice slice) {
                  py::print("bindset.__getitem__");
                  classify::binary_dataset_view bdv{bdset};
@@ -175,6 +184,15 @@ void metapy_bind_classify(py::module& m)
                                               pydset_view}
         .def(py::init<const classify::binary_dataset&>(),
              py::keep_alive<0, 1>())
+        .def("__getitem__",
+             [](const classify::binary_dataset_view& dv, int64_t offset) {
+                 std::size_t idx = offset >= 0
+                                       ? static_cast<std::size_t>(offset)
+                                       : dv.size() + offset;
+                 if (idx >= dv.size())
+                     throw py::index_error();
+                 return *(dv.begin() + idx);
+             })
         .def("__getitem__",
              [](const classify::binary_dataset_view& bdv, py::slice slice) {
                  return make_sliced_dataset_view(bdv, slice);
@@ -188,10 +206,21 @@ void metapy_bind_classify(py::module& m)
     py::class_<classify::multiclass_dataset>{m_classify, "MulticlassDataset",
                                              pydset}
         .def(py::init<std::shared_ptr<index::forward_index>>())
-        .def("label", &classify::multiclass_dataset::label)
+        .def("label",
+             [](const classify::multiclass_dataset& dset,
+                const learn::instance& inst) { return dset.label(inst); })
         .def("total_labels", &classify::multiclass_dataset::total_labels)
         .def("label_id_for", &classify::multiclass_dataset::label_id_for)
         .def("label_for", &classify::multiclass_dataset::label_for)
+        .def("__getitem__",
+             [](const classify::multiclass_dataset& dset, int64_t offset) {
+                 std::size_t idx = offset >= 0
+                                       ? static_cast<std::size_t>(offset)
+                                       : dset.size() + offset;
+                 if (idx >= dset.size())
+                     throw py::index_error();
+                 return *(dset.begin() + idx);
+             })
         .def("__getitem__",
              [](const classify::multiclass_dataset& dset, py::slice slice) {
                  classify::multiclass_dataset_view mdv{dset};
@@ -203,6 +232,15 @@ void metapy_bind_classify(py::module& m)
         m_classify, "MulticlassDatasetView", pydset_view}
         .def(py::init<const classify::multiclass_dataset&>(),
              py::keep_alive<0, 1>())
+        .def("__getitem__",
+             [](const classify::multiclass_dataset_view& dv, int64_t offset) {
+                 std::size_t idx = offset >= 0
+                                       ? static_cast<std::size_t>(offset)
+                                       : dv.size() + offset;
+                 if (idx >= dv.size())
+                     throw py::index_error();
+                 return *(dv.begin() + idx);
+             })
         .def("__getitem__",
              [](const classify::multiclass_dataset_view& mdv, py::slice slice) {
                  return make_sliced_dataset_view(mdv, slice);
