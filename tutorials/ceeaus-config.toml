@@ -1,0 +1,10 @@
+prefix = "."
+dataset = "ceeaus"
+corpus = "line.toml"
+index = "ceeaus-idx"
+stop-words = "lemur-stopwords.txt"
+
+[[analyzers]]
+method = "ngram-word"
+ngram = 1
+filter = "default-unigram-chain"
