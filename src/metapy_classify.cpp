@@ -461,7 +461,7 @@ void metapy_bind_classify(py::module& m)
                 // must acquire the GIL before calling back into Python
                 // code to construct the classifier
                 py::gil_scoped_acquire acq;
-                return std::make_unique<cpp_created_py_binary_classifier>(
+                return make_unique<cpp_created_py_binary_classifier>(
                     cls(bdv, **kwargs));
             };
 
@@ -480,7 +480,7 @@ void metapy_bind_classify(py::module& m)
                 // must acquire the GIL before calling back into Python
                 // code to construct the classifier
                 py::gil_scoped_acquire acq;
-                return std::make_unique<cpp_created_py_binary_classifier>(
+                return make_unique<cpp_created_py_binary_classifier>(
                     cls(bdv, **kwargs));
             };
 
