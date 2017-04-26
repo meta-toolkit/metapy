@@ -11,6 +11,7 @@
 #include "meta/learn/dataset_view.h"
 #include "meta/learn/loss/all.h"
 #include "meta/learn/sgd.h"
+#include "meta/learn/transform.h"
 #include "meta/util/iterator.h"
 #include "metapy_identifiers.h"
 #include "metapy_learn.h"
@@ -79,7 +80,19 @@ void metapy_bind_learn(py::module& m)
                                double val) { fv[fid] = val; })
         .def("clear", &learn::feature_vector::clear)
         .def("shrink_to_fit", &learn::feature_vector::shrink_to_fit)
-        .def("condense", &learn::feature_vector::condense);
+        .def("condense", &learn::feature_vector::condense)
+        .def("__str__", [](const learn::feature_vector& fv) {
+            std::stringstream ss;
+            util::string_view padding = "";
+            ss << '[';
+            for (const auto& pr : fv)
+            {
+                ss << padding << '(' << pr.first << ", " << pr.second << ')';
+                padding = ", ";
+            }
+            ss << ']';
+            return ss.str();
+        });
 
     py::class_<learn::instance>{m_learn, "Instance"}
         .def(py::init<learn::instance_id>())
@@ -88,18 +101,21 @@ void metapy_bind_learn(py::module& m)
         .def_readwrite("weights", &learn::instance::weights);
 
     py::class_<learn::dataset> pydset{m_learn, "Dataset"};
-    pydset
+    pydset.def(py::init<std::shared_ptr<index::forward_index>>())
+        .def(py::init<std::shared_ptr<index::forward_index>,
+                      std::vector<doc_id>>())
         .def("__getitem__",
-             [](const learn::dataset& dset, int64_t offset) {
+             [](learn::dataset& dset, int64_t offset) -> learn::instance& {
                  std::size_t idx = offset >= 0
                                        ? static_cast<std::size_t>(offset)
                                        : dset.size() + offset;
                  if (idx >= dset.size())
                      throw py::index_error();
                  return *(dset.begin() + idx);
-             })
+             },
+             py::return_value_policy::reference_internal)
         .def("__getitem__",
-             [](const learn::dataset& dset, py::slice slice) {
+             [](learn::dataset& dset, py::slice slice) {
                  learn::dataset_view dv{dset};
                  return make_sliced_dataset_view(dv, slice);
              },
@@ -139,6 +155,9 @@ void metapy_bind_learn(py::module& m)
              py::keep_alive<0, 1>());
 
     py::implicitly_convertible<learn::dataset, learn::dataset_view>();
+
+    m_learn.def("tfidf_transform", &learn::tfidf_transform);
+    m_learn.def("l2norm_transform", &learn::l2norm_transform);
 
     auto m_loss = m_learn.def_submodule("loss");
 
