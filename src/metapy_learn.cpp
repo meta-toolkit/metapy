@@ -82,6 +82,20 @@ void metapy_bind_learn(py::module& m)
         .def("clear", &learn::feature_vector::clear)
         .def("shrink_to_fit", &learn::feature_vector::shrink_to_fit)
         .def("condense", &learn::feature_vector::condense)
+        .def("dot",
+             [](const learn::feature_vector& self,
+                const learn::feature_vector& other) {
+                 return util::dot_product(self, other);
+             })
+        .def("cosine",
+             [](const learn::feature_vector& self,
+                const learn::feature_vector& other) {
+                 return util::cosine_sim(self, other);
+             })
+        .def("l2norm",
+             [](const learn::feature_vector& self) {
+                 return util::l2norm(self);
+             })
         .def("__str__", [](const learn::feature_vector& fv) {
             std::stringstream ss;
             util::string_view padding = "";
@@ -94,6 +108,14 @@ void metapy_bind_learn(py::module& m)
             ss << ']';
             return ss.str();
         });
+
+    m_learn.def("dot", &util::dot_product<const learn::feature_vector&,
+                                          const learn::feature_vector&>);
+    m_learn.def("cosine", &util::cosine_sim<const learn::feature_vector&,
+                                            const learn::feature_vector&>);
+    m_learn.def("l2norm", [](const learn::feature_vector& vec) {
+        return util::l2norm(vec);
+    });
 
     py::class_<learn::instance>{m_learn, "Instance"}
         .def(py::init<learn::instance_id>())
