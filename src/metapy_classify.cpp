@@ -6,6 +6,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "cpptoml.h"
 #include "meta/classify/binary_dataset_view.h"
@@ -162,6 +163,9 @@ void metapy_bind_classify(py::module& m)
     py::class_<classify::binary_dataset>{m_classify, "BinaryDataset", pydset}
         .def(py::init<std::shared_ptr<index::forward_index>,
                       std::function<bool(doc_id)>>())
+        .def(
+            py::init<std::shared_ptr<index::forward_index>,
+                     const std::vector<doc_id>&, std::function<bool(doc_id)>>())
         .def("label", &classify::binary_dataset::label)
         .def("__getitem__",
              [](const classify::binary_dataset& dset, int64_t offset) {
@@ -206,6 +210,8 @@ void metapy_bind_classify(py::module& m)
     py::class_<classify::multiclass_dataset>{m_classify, "MulticlassDataset",
                                              pydset}
         .def(py::init<std::shared_ptr<index::forward_index>>())
+        .def(py::init<std::shared_ptr<index::forward_index>,
+                      const std::vector<doc_id>&>())
         .def("label",
              [](const classify::multiclass_dataset& dset,
                 const learn::instance& inst) { return dset.label(inst); })
