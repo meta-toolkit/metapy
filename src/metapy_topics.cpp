@@ -12,6 +12,7 @@
 #include "meta/topics/lda_gibbs.h"
 #include "meta/topics/lda_scvb.h"
 #include "meta/topics/parallel_lda_gibbs.h"
+#include "metapy_stats.h"
 #include "metapy_topics.h"
 
 namespace py = pybind11;
@@ -35,6 +36,58 @@ void run_lda(const std::string& config_path, const std::string& out_prefix,
 void metapy_bind_topics(py::module& m)
 {
     auto m_topics = m.def_submodule("topics");
+
+    py::class_<topics::lda_model>{m_topics, "LDAModel"}
+        .def("run", &topics::lda_model::run)
+        .def("save_doc_topic_distributions",
+             [](const topics::lda_model& model, const std::string& filename) {
+                 std::ofstream output{filename, std::ios::binary};
+                 model.save_doc_topic_distributions(output);
+             })
+        .def("save_topic_term_distributions",
+             [](const topics::lda_model& model, const std::string& filename) {
+                 std::ofstream output{filename, std::ios::binary};
+                 model.save_topic_term_distributions(output);
+             })
+        .def("save", &topics::lda_model::save)
+        .def("compute_term_topic_probability",
+             &topics::lda_model::compute_term_topic_probability)
+        .def("compute_doc_topic_probability",
+             &topics::lda_model::compute_doc_topic_probability)
+        .def("topic_distribution",
+             [](const topics::lda_model& model, doc_id doc) {
+                 return py_multinomial{model.topic_distribution(doc)};
+             })
+        .def("num_topics", &topics::lda_model::num_topics);
+
+    py::class_<topics::lda_cvb, topics::lda_model>{m_topics, "LDACollapsedVB"}
+        .def(py::init<const learn::dataset&, std::size_t, double, double>(),
+             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
+             py::arg("beta"))
+        .def("run", &topics::lda_cvb::run, py::arg("num_iters"),
+             py::arg("convergence") = 1e-3);
+
+    py::class_<topics::lda_gibbs, topics::lda_model>{m_topics, "LDAGibbs"}
+        .def(py::init<const learn::dataset&, std::size_t, double, double>(),
+             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
+             py::arg("beta"))
+        .def("run", &topics::lda_gibbs::run, py::arg("num_iters"),
+             py::arg("convergence") = 1e-6);
+
+    py::class_<topics::parallel_lda_gibbs, topics::lda_gibbs>{
+        m_topics, "LDAParallelGibbs"}
+        .def(py::init<const learn::dataset&, std::size_t, double, double>(),
+             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
+             py::arg("beta"));
+
+    py::class_<topics::lda_scvb, topics::lda_model>{m_topics,
+                                                    "LDAStochasticCVB"}
+        .def(py::init<const learn::dataset&, std::size_t, double, double,
+                      uint64_t>(),
+             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
+             py::arg("beta"), py::arg("minibatch_size") = 100)
+        .def("run", &topics::lda_scvb::run, py::arg("num_iters"),
+             py::arg("convergence") = 0);
 
     m_topics
         .def("run_gibbs",
