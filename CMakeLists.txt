@@ -38,6 +38,7 @@ add_library(metapy SHARED src/metapy_analyzers.cpp
                           src/metapy_index.cpp
                           src/metapy_learn.cpp
                           src/metapy_sequence.cpp
+                          src/metapy_stats.cpp
                           src/metapy_parser.cpp
                           src/metapy_topics.cpp
                           src/metapy.cpp)
