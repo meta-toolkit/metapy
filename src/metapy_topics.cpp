@@ -3,11 +3,13 @@
  * @author Sean Massung
  */
 
-#include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
+#include <pybind11/stl.h>
 
 #include "cpptoml.h"
 #include "meta/learn/dataset.h"
 #include "meta/logging/logger.h"
+#include "meta/topics/bl_term_scorer.h"
 #include "meta/topics/lda_cvb.h"
 #include "meta/topics/lda_gibbs.h"
 #include "meta/topics/lda_scvb.h"
@@ -89,51 +91,53 @@ void metapy_bind_topics(py::module& m)
         .def("run", &topics::lda_scvb::run, py::arg("num_iters"),
              py::arg("convergence") = 0);
 
-    m_topics
-        .def("run_gibbs",
-             [](const std::string& config_path, const std::string& out_prefix,
-                std::size_t num_topics, double alpha, double beta,
-                std::size_t num_iters, double convergence) {
-                 run_lda<topics::lda_gibbs>(config_path, out_prefix, num_topics,
-                                            alpha, beta, num_iters,
-                                            convergence);
-             },
-             py::arg("config_path"), py::arg("out_prefix"),
-             py::arg("num_topics"), py::arg("alpha") = 0.1,
-             py::arg("beta") = 0.1, py::arg("num_iters") = 500,
-             py::arg("convergence") = 1e-6)
-        .def("run_cvb",
-             [](const std::string& config_path, const std::string& out_prefix,
-                std::size_t num_topics, double alpha, double beta,
-                size_t num_iters, double convergence) {
-                 run_lda<topics::lda_cvb>(config_path, out_prefix, num_topics,
-                                          alpha, beta, num_iters, convergence);
-             },
-             py::arg("config_path"), py::arg("out_prefix"),
-             py::arg("num_topics"), py::arg("alpha") = 0.1,
-             py::arg("beta") = 0.1, py::arg("num_iters") = 500,
-             py::arg("convergence") = 1e-6)
-        .def("run_parallel_gibbs",
-             [](const std::string& config_path, const std::string& out_prefix,
-                std::size_t num_topics, double alpha, double beta,
-                std::size_t num_iters, double convergence) {
-                 run_lda<topics::parallel_lda_gibbs>(config_path, out_prefix,
-                                                     num_topics, alpha, beta,
-                                                     num_iters, convergence);
-             },
-             py::arg("config_path"), py::arg("out_prefix"),
-             py::arg("num_topics"), py::arg("alpha") = 0.1,
-             py::arg("beta") = 0.1, py::arg("num_iters") = 500,
-             py::arg("convergence") = 1e-6)
-        .def("run_scvb",
-             [](const std::string& config_path, const std::string& out_prefix,
-                std::size_t num_topics, double alpha, double beta,
-                std::size_t num_iters, double convergence) {
-                 run_lda<topics::lda_scvb>(config_path, out_prefix, num_topics,
-                                           alpha, beta, num_iters, convergence);
-             },
-             py::arg("config_path"), py::arg("out_prefix"),
-             py::arg("num_topics"), py::arg("alpha") = 0.1,
-             py::arg("beta") = 0.1, py::arg("num_iters") = 500,
-             py::arg("convergence") = 1e-6);
+    py::class_<topics::topic_model>{m_topics, "TopicModel"}
+        .def("__init__",
+             [](topics::topic_model& model, const std::string& prefix) {
+                 std::ifstream theta{prefix + ".theta.bin", std::ios::binary};
+
+                 if (!theta)
+                 {
+                     throw topics::topic_model_exception{
+                         "missing document topic probabilities file: " + prefix
+                         + ".theta.bin"};
+                 }
+
+                 std::ifstream phi{prefix + ".phi.bin", std::ios::binary};
+                 if (!phi)
+                 {
+                     throw topics::topic_model_exception{
+                         "missing topic term probabilities file: " + prefix
+                         + ".phi.bin"};
+                 }
+
+                 new (&model) topics::topic_model(theta, phi);
+             })
+        .def("top_k", [](const topics::topic_model& model, topic_id tid,
+                         std::size_t k) { return model.top_k(tid, k); },
+             py::arg("tid"), py::arg("k") = 10)
+        .def("top_k",
+             [](const topics::topic_model& model, topic_id tid, std::size_t k,
+                std::function<double(topic_id, term_id)> scorer) {
+                 return model.top_k(tid, k, scorer);
+             })
+        .def("top_k",
+             [](const topics::topic_model& model, topic_id tid, std::size_t k,
+                const topics::bl_term_scorer& scorer) {
+                 return model.top_k(tid, k, scorer);
+             })
+        .def("topic_distribution", &topics::topic_model::topic_distribution)
+        .def("term_probability", &topics::topic_model::term_probability)
+        .def("topic_probability", &topics::topic_model::topic_probability)
+        .def("num_topics", &topics::topic_model::num_topics)
+        .def("num_words", &topics::topic_model::num_words);
+
+    m_topics.def("load_topic_model", [](const std::string& config_path) {
+        auto config = cpptoml::parse_file(config_path);
+        return topics::load_topic_model(*config);
+    });
+
+    py::class_<topics::bl_term_scorer>{m_topics, "BLTermScorer"}
+        .def(py::init<const topics::topic_model&>(), py::keep_alive<0, 1>())
+        .def("__call__", &topics::bl_term_scorer::operator());
 }
