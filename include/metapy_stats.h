@@ -52,7 +52,7 @@ class py_multinomial
         return concept_->unique_events();
     }
 
-    void each_seen_event(pybind11::function fun) const
+    void each_seen_event(std::function<void(const pybind11::object&)> fun) const
     {
         concept_->each_seen_event(fun);
     }
@@ -77,7 +77,8 @@ class py_multinomial
         virtual double counts(pybind11::object obj) const = 0;
         virtual double counts() const = 0;
         virtual uint64_t unique_events() const = 0;
-        virtual void each_seen_event(pybind11::function fun) const = 0;
+        virtual void each_seen_event(
+            std::function<void(const pybind11::object&)> fun) const = 0;
         virtual void clear() = 0;
         virtual double probability(pybind11::object obj) const = 0;
     };
@@ -116,7 +117,8 @@ class py_multinomial
             return dist_.unique_events();
         }
 
-        void each_seen_event(pybind11::function fun) const override
+        void each_seen_event(
+            std::function<void(const pybind11::object&)> fun) const override
         {
             dist_.each_seen_event(
                 [&](const T& event) { fun(pybind11::cast(event)); });

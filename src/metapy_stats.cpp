@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 
 #include "meta/stats/multinomial.h"
 
@@ -31,5 +32,19 @@ void metapy_bind_stats(py::module& m)
         .def("unique_events", &py_multinomial::unique_events)
         .def("each_seen_event", &py_multinomial::each_seen_event)
         .def("clear", &py_multinomial::clear)
-        .def("probability", &py_multinomial::probability);
+        .def("probability", &py_multinomial::probability)
+        .def("__repr__", [](const py_multinomial& mult) {
+            const auto size = mult.unique_events();
+            uint64_t i = 0;
+            std::string result = "<metapy.stats.Multinomial {";
+            mult.each_seen_event([&](const py::object& obj) {
+                result += obj.attr("__repr__")().cast<std::string>();
+                result += ": ";
+                result += std::to_string(mult.probability(obj));
+                if (++i != size)
+                    result += ", ";
+            });
+            result += "}>";
+            return result;
+        });
 }
