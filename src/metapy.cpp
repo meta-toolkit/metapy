@@ -18,6 +18,8 @@
 #include "metapy_stats.h"
 #include "metapy_topics.h"
 
+#include "meta/logging/logger.h"
+
 namespace py = pybind11;
 
 PYBIND11_PLUGIN(metapy)
@@ -33,6 +35,10 @@ PYBIND11_PLUGIN(metapy)
     metapy_bind_embeddings(m);
     metapy_bind_stats(m);
     metapy_bind_topics(m);
+
+    m.def("log_to_stderr", []() {
+        meta::logging::set_cerr_logging();
+    });
 
     return m.ptr();
 }
