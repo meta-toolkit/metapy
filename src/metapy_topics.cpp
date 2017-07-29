@@ -60,34 +60,38 @@ void metapy_bind_topics(py::module& m)
              [](const topics::lda_model& model, doc_id doc) {
                  return py_multinomial{model.topic_distribution(doc)};
              })
+        .def("term_distribution",
+             [](const topics::lda_model& model, topic_id k) {
+                 return py_multinomial{model.term_distribution(k)};
+             })
         .def("num_topics", &topics::lda_model::num_topics);
 
     py::class_<topics::lda_cvb, topics::lda_model>{m_topics, "LDACollapsedVB"}
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
-             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
-             py::arg("beta"))
+             py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
+             py::arg("alpha"), py::arg("beta"))
         .def("run", &topics::lda_cvb::run, py::arg("num_iters"),
              py::arg("convergence") = 1e-3);
 
     py::class_<topics::lda_gibbs, topics::lda_model>{m_topics, "LDAGibbs"}
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
-             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
-             py::arg("beta"))
+             py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
+             py::arg("alpha"), py::arg("beta"))
         .def("run", &topics::lda_gibbs::run, py::arg("num_iters"),
              py::arg("convergence") = 1e-6);
 
     py::class_<topics::parallel_lda_gibbs, topics::lda_gibbs>{
         m_topics, "LDAParallelGibbs"}
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
-             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
-             py::arg("beta"));
+             py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
+             py::arg("alpha"), py::arg("beta"));
 
     py::class_<topics::lda_scvb, topics::lda_model>{m_topics,
                                                     "LDAStochasticCVB"}
         .def(py::init<const learn::dataset&, std::size_t, double, double,
                       uint64_t>(),
-             py::arg("docs"), py::arg("num_topics"), py::arg("alpha"),
-             py::arg("beta"), py::arg("minibatch_size") = 100)
+             py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
+             py::arg("alpha"), py::arg("beta"), py::arg("minibatch_size") = 100)
         .def("run", &topics::lda_scvb::run, py::arg("num_iters"),
              py::arg("convergence") = 0);
 
@@ -120,13 +124,22 @@ void metapy_bind_topics(py::module& m)
              [](const topics::topic_model& model, topic_id tid, std::size_t k,
                 std::function<double(topic_id, term_id)> scorer) {
                  return model.top_k(tid, k, scorer);
-             })
+             },
+             py::arg("tid"), py::arg("k") = 10, py::arg("scorer"))
         .def("top_k",
              [](const topics::topic_model& model, topic_id tid, std::size_t k,
                 const topics::bl_term_scorer& scorer) {
                  return model.top_k(tid, k, scorer);
+             },
+             py::arg("tid"), py::arg("k") = 10, py::arg("scorer"))
+        .def("topic_distribution",
+             [](const topics::topic_model& self, doc_id did) {
+                 return py_multinomial{self.topic_distribution(did)};
              })
-        .def("topic_distribution", &topics::topic_model::topic_distribution)
+        .def("term_distribution",
+             [](const topics::topic_model& self, topic_id k) {
+                 return py_multinomial{self.term_distribution(k)};
+             })
         .def("term_probability", &topics::topic_model::term_probability)
         .def("topic_probability", &topics::topic_model::topic_probability)
         .def("num_topics", &topics::topic_model::num_topics)
