@@ -41,6 +41,13 @@ PYBIND11_PLUGIN(metapy)
     metapy_bind_stats(m);
     metapy_bind_topics(m);
 
+    // printing::progress makes this really difficult to reason about.
+    // Progress updating occurs from a separate thread. This is fine,
+    // except that we need to use the Python stderr here instead of the
+    // usual std::cerr. In order to do that, we need the GIL. We run into
+    // problems when the current thread holds the GIL and then the progress
+    // thread attempts to acquire it. So, **any function that uses progress
+    // reporting must release the GIL before being invoked**!
     m.def("log_to_stderr", []() {
         // separate logging for progress output
         meta::logging::add_sink(
