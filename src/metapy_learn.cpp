@@ -109,10 +109,12 @@ void metapy_bind_learn(py::module& m)
             return ss.str();
         });
 
-    m_learn.def("dot", &util::dot_product<const learn::feature_vector&,
-                                          const learn::feature_vector&>);
-    m_learn.def("cosine", &util::cosine_sim<const learn::feature_vector&,
-                                            const learn::feature_vector&>);
+    m_learn.def("dot",
+                &util::dot_product<const learn::feature_vector&,
+                                   const learn::feature_vector&>);
+    m_learn.def("cosine",
+                &util::cosine_sim<const learn::feature_vector&,
+                                  const learn::feature_vector&>);
     m_learn.def("l2norm", [](const learn::feature_vector& vec) {
         return util::l2norm(vec);
     });
@@ -124,9 +126,20 @@ void metapy_bind_learn(py::module& m)
         .def_readwrite("weights", &learn::instance::weights);
 
     py::class_<learn::dataset> pydset{m_learn, "Dataset"};
-    pydset.def(py::init<std::shared_ptr<index::forward_index>>())
-        .def(py::init<std::shared_ptr<index::forward_index>,
-                      std::vector<doc_id>>())
+    pydset
+        .def("__init__",
+             [](learn::dataset& dset,
+                const std::shared_ptr<index::forward_index>& fidx) {
+                 py::gil_scoped_release release;
+                 new (&dset) learn::dataset(fidx);
+             })
+        .def("__init__",
+             [](learn::dataset& dset,
+                const std::shared_ptr<index::forward_index>& fidx,
+                const std::vector<doc_id>& docs) {
+                 py::gil_scoped_release release;
+                 new (&dset) learn::dataset(fidx, docs);
+             })
         .def("__getitem__",
              [](learn::dataset& dset, int64_t offset) -> learn::instance& {
                  std::size_t idx = offset >= 0

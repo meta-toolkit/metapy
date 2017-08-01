@@ -19,12 +19,17 @@
 #include "metapy_topics.h"
 
 #include "meta/logging/logger.h"
+#include "meta/parser/analyzers/tree_analyzer.h"
+#include "meta/sequence/analyzers/ngram_pos_analyzer.h"
 
 namespace py = pybind11;
 
 PYBIND11_PLUGIN(metapy)
 {
     py::module m{"metapy", "MeTA toolkit python bindings"};
+
+    meta::sequence::register_analyzers();
+    meta::parser::register_analyzers();
 
     metapy_bind_index(m);
     metapy_bind_analyzers(m);
@@ -37,7 +42,27 @@ PYBIND11_PLUGIN(metapy)
     metapy_bind_topics(m);
 
     m.def("log_to_stderr", []() {
-        meta::logging::set_cerr_logging();
+        // separate logging for progress output
+        meta::logging::add_sink(
+            {[](const std::string& line) {
+                 py::gil_scoped_acquire gil;
+                 py::module::import("sys").attr("stderr").attr("write")(line);
+             },
+             []() {},
+             [](const meta::logging::logger::log_line& ll) {
+                 return ll.severity()
+                        == meta::logging::logger::severity_level::progress;
+             },
+             [](const meta::logging::logger::log_line& ll) {
+                 return " " + ll.str();
+             }});
+
+        meta::logging::add_sink(
+            {[](const std::string& line) {
+                 py::gil_scoped_acquire gil;
+                 py::module::import("sys").attr("stderr").attr("write")(line);
+             },
+             []() {}, meta::logging::logger::severity_level::trace});
     });
 
     return m.ptr();

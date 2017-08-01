@@ -161,11 +161,21 @@ void metapy_bind_classify(py::module& m)
 
     // binary datasets/views
     py::class_<classify::binary_dataset>{m_classify, "BinaryDataset", pydset}
-        .def(py::init<std::shared_ptr<index::forward_index>,
-                      std::function<bool(doc_id)>>())
-        .def(
-            py::init<std::shared_ptr<index::forward_index>,
-                     const std::vector<doc_id>&, std::function<bool(doc_id)>>())
+        .def("__init__",
+             [](classify::binary_dataset& dset,
+                const std::shared_ptr<index::forward_index>& fidx,
+                std::function<bool(doc_id)> labeler) {
+                 py::gil_scoped_release release;
+                 new (&dset) classify::binary_dataset(fidx, labeler);
+             })
+        .def("__init__",
+             [](classify::binary_dataset& dset,
+                const std::shared_ptr<index::forward_index>& fidx,
+                const std::vector<doc_id>& docs,
+                std::function<bool(doc_id)> labeler) {
+                 py::gil_scoped_release release;
+                 new (&dset) classify::binary_dataset(fidx, docs, labeler);
+             })
         .def("label", &classify::binary_dataset::label)
         .def("__getitem__",
              [](const classify::binary_dataset& dset, int64_t offset) {
@@ -209,9 +219,21 @@ void metapy_bind_classify(py::module& m)
     // multiclass datasets/views
     py::class_<classify::multiclass_dataset>{m_classify, "MulticlassDataset",
                                              pydset}
-        .def(py::init<std::shared_ptr<index::forward_index>>())
-        .def(py::init<std::shared_ptr<index::forward_index>,
-                      const std::vector<doc_id>&>())
+        .def("__init__",
+            [](classify::multiclass_dataset& dset,
+              const std::shared_ptr<index::forward_index>& fidx)
+            {
+              py::gil_scoped_release release;
+              new (&dset) classify::multiclass_dataset(fidx);
+            })
+        .def("__init__",
+            [](classify::multiclass_dataset& dset,
+              const std::shared_ptr<index::forward_index>& fidx,
+              const std::vector<doc_id>& docs)
+            {
+              py::gil_scoped_release release;
+              new (&dset) classify::multiclass_dataset(fidx, docs);
+            })
         .def("label",
              [](const classify::multiclass_dataset& dset,
                 const learn::instance& inst) { return dset.label(inst); })

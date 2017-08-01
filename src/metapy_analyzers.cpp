@@ -25,6 +25,9 @@
 #include "meta/analyzers/tokenizers/icu_tokenizer.h"
 #include "meta/corpus/document.h"
 #include "meta/parallel/thread_pool.h"
+#include "meta/parser/analyzers/featurizers/all.h"
+#include "meta/parser/analyzers/tree_analyzer.h"
+#include "meta/sequence/analyzers/ngram_pos_analyzer.h"
 #include "meta/util/algorithm.h"
 
 namespace py = pybind11;
@@ -205,14 +208,13 @@ void make_token_stream(TokenStream& next, const analyzers::token_stream& prev,
     new (&next) TokenStream(prev.clone(), args...);
 }
 
-template <class T>
-py::object ngram_analyze(analyzers::ngram_word_analyzer& ana,
-                         const corpus::document& doc)
+template <class NGramAnalyzer, class T>
+py::object ngram_analyze(NGramAnalyzer& ana, const corpus::document& doc)
 {
     if (ana.n_value() == 1)
-        return py::cast(ana.analyze<T>(doc));
+        return py::cast(ana.template analyze<T>(doc));
 
-    auto ngrams = ana.analyze<T>(doc);
+    auto ngrams = ana.template analyze<T>(doc);
 
     py::dict ret;
     for (const auto& kv : ngrams)
@@ -406,8 +408,46 @@ void metapy_bind_analyzers(py::module& m)
              [](ngram_word_analyzer& ana, uint16_t n, const token_stream& ts) {
                  new (&ana) ngram_word_analyzer(n, ts.clone());
              })
-        .def("analyze", &ngram_analyze<uint64_t>)
-        .def("featurize", &ngram_analyze<double>);
+        .def("analyze", &ngram_analyze<ngram_word_analyzer, uint64_t>)
+        .def("featurize", &ngram_analyze<ngram_word_analyzer, double>);
+
+    py::class_<ngram_pos_analyzer>{m_ana, "NGramPOSAnalyzer", analyzer_base}
+        .def("__init__",
+             [](ngram_pos_analyzer& ana, uint16_t n, const token_stream& ts,
+                const std::string& crf_prefix) {
+                 new (&ana) ngram_pos_analyzer(n, ts.clone(), crf_prefix);
+             })
+        .def("analyze", &ngram_analyze<ngram_pos_analyzer, uint64_t>)
+        .def("featurize", &ngram_analyze<ngram_pos_analyzer, double>);
+
+    py::class_<tree_featurizer> py_tree_feat{m_ana, "TreeFeaturizer"};
+    py_tree_feat.def("tree_tokenize", &tree_featurizer::tree_tokenize);
+
+    py::class_<branch_featurizer>{m_ana, "BranchFeaturizer", py_tree_feat}.def(
+        py::init<>());
+    py::class_<depth_featurizer>{m_ana, "DepthFeaturizer", py_tree_feat}.def(
+        py::init<>());
+    py::class_<semi_skeleton_featurizer>{m_ana, "SemiSkeletonFeaturizer",
+                                         py_tree_feat}
+        .def(py::init<>());
+    py::class_<skeleton_featurizer>{m_ana, "SkeletonFeaturizer", py_tree_feat}
+        .def(py::init<>());
+    py::class_<subtree_featurizer>{m_ana, "SubtreeFeaturizer", py_tree_feat}
+        .def(py::init<>());
+    py::class_<tag_featurizer>{m_ana, "TagFeaturizer", py_tree_feat}.def(
+        py::init<>());
+
+    py::class_<tree_analyzer>{m_ana, "TreeAnalyzer", analyzer_base}
+        .def("__init__",
+             [](tree_analyzer& ana, const token_stream& ts,
+                const std::string& tagger_prefix,
+                const std::string& parser_prefix) {
+                 new (&ana)
+                     tree_analyzer(ts.clone(), tagger_prefix, parser_prefix);
+             })
+        .def("add", [](tree_analyzer& ana, const tree_featurizer& featurizer) {
+            ana.add(featurizer.clone());
+        });
 
     py::class_<multi_analyzer>{m_ana, "MultiAnalyzer", analyzer_base};
 

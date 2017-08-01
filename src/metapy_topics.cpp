@@ -40,7 +40,12 @@ void metapy_bind_topics(py::module& m)
     auto m_topics = m.def_submodule("topics");
 
     py::class_<topics::lda_model>{m_topics, "LDAModel"}
-        .def("run", &topics::lda_model::run)
+        .def("run",
+             [](topics::lda_model& model, uint64_t num_iters,
+                double convergence) {
+                 py::gil_scoped_release release;
+                 model.run(num_iters, convergence);
+             })
         .def("save_doc_topic_distributions",
              [](const topics::lda_model& model, const std::string& filename) {
                  std::ofstream output{filename, std::ios::binary};
@@ -70,15 +75,24 @@ void metapy_bind_topics(py::module& m)
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
              py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
              py::arg("alpha"), py::arg("beta"))
-        .def("run", &topics::lda_cvb::run, py::arg("num_iters"),
-             py::arg("convergence") = 1e-3);
+        .def("run",
+             [](topics::lda_cvb& lda, uint64_t num_iters, double convergence) {
+                 py::gil_scoped_release release;
+                 lda.run(num_iters, convergence);
+             },
+             py::arg("num_iters"), py::arg("convergence") = 1e-3);
 
     py::class_<topics::lda_gibbs, topics::lda_model>{m_topics, "LDAGibbs"}
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
              py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
              py::arg("alpha"), py::arg("beta"))
-        .def("run", &topics::lda_gibbs::run, py::arg("num_iters"),
-             py::arg("convergence") = 1e-6);
+        .def(
+            "run",
+            [](topics::lda_gibbs& lda, uint64_t num_iters, double convergence) {
+                py::gil_scoped_release release;
+                lda.run(num_iters, convergence);
+            },
+            py::arg("num_iters"), py::arg("convergence") = 1e-6);
 
     py::class_<topics::parallel_lda_gibbs, topics::lda_gibbs>{
         m_topics, "LDAParallelGibbs"}
@@ -92,12 +106,18 @@ void metapy_bind_topics(py::module& m)
                       uint64_t>(),
              py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
              py::arg("alpha"), py::arg("beta"), py::arg("minibatch_size") = 100)
-        .def("run", &topics::lda_scvb::run, py::arg("num_iters"),
-             py::arg("convergence") = 0);
+        .def("run",
+             [](topics::lda_scvb& lda, uint64_t num_iters, double convergence) {
+                 py::gil_scoped_release release;
+                 lda.run(num_iters, convergence);
+             },
+             py::arg("num_iters"), py::arg("convergence") = 0);
 
     py::class_<topics::topic_model>{m_topics, "TopicModel"}
         .def("__init__",
              [](topics::topic_model& model, const std::string& prefix) {
+                 py::gil_scoped_release release;
+
                  std::ifstream theta{prefix + ".theta.bin", std::ios::binary};
 
                  if (!theta)
@@ -146,6 +166,7 @@ void metapy_bind_topics(py::module& m)
         .def("num_words", &topics::topic_model::num_words);
 
     m_topics.def("load_topic_model", [](const std::string& config_path) {
+        py::gil_scoped_release release;
         auto config = cpptoml::parse_file(config_path);
         return topics::load_topic_model(*config);
     });
