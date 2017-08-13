@@ -281,7 +281,8 @@ void metapy_bind_classify(py::module& m)
     // confusion matrix
     py::class_<classify::confusion_matrix>{m_classify, "ConfusionMatrix"}
         .def(py::init<>())
-        .def("add", &classify::confusion_matrix::add)
+        .def("add", &classify::confusion_matrix::add, py::arg("predicted"),
+             py::arg("actual"), py::arg("num_times") = 1)
         .def("add_fold_accuracy",
              &classify::confusion_matrix::add_fold_accuracy)
         .def("fold_accuracy", &classify::confusion_matrix::fold_accuracy)
