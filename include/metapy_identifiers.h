@@ -22,12 +22,13 @@ template <class Type>
 struct identifier_caster
 {
     using underlying_type = typename Type::underlying_type;
+    using type_conv = make_caster<underlying_type>;
 
-    PYBIND11_TYPE_CASTER(Type, _("id"));
+    PYBIND11_TYPE_CASTER(Type, _("id[") + type_conv::name() + _("]"));
 
     bool load(handle src, bool convert)
     {
-        make_caster<underlying_type> conv;
+        type_conv conv;
         if (!conv.load(src, convert))
             return false;
         value = Type{(underlying_type)conv};
@@ -37,8 +38,8 @@ struct identifier_caster
     static handle cast(const Type& src, return_value_policy policy,
                        handle parent)
     {
-        return make_caster<underlying_type>::cast(
-            static_cast<underlying_type>(src), policy, parent);
+        return type_conv::cast(static_cast<underlying_type>(src), policy,
+                               parent);
     }
 };
 
