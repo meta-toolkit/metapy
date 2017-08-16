@@ -123,7 +123,11 @@ void metapy_bind_sequence(py::module& m)
         .def_readwrite("seed", &perceptron::training_options::seed);
 
     perc_tagger.def(py::init<>())
-        .def(py::init<const std::string&>())
+        .def("__init__",
+             [](perceptron& model, const std::string& path) {
+                 py::gil_scoped_release rel;
+                 new (&model) perceptron(path);
+             })
         .def("tag", &perceptron::tag)
         .def("train", &perceptron::train)
         .def("save", &perceptron::save);
