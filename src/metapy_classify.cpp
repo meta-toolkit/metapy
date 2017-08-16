@@ -402,7 +402,7 @@ void metapy_bind_classify(py::module& m)
              py::arg("options") = learn::sgd_model::options_type{},
              py::arg("gamma") = classify::sgd::default_gamma,
              py::arg("max_iter") = classify::sgd::default_max_iter,
-             py::arg("calibrate") = false);
+             py::arg("calibrate") = true);
 
     // multiclass classifiers
     py::class_<classify::classifier, py_classifier<>> pycls{m_classify,
