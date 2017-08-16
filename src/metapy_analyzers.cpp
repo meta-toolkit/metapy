@@ -415,6 +415,7 @@ void metapy_bind_analyzers(py::module& m)
         .def("__init__",
              [](ngram_pos_analyzer& ana, uint16_t n, const token_stream& ts,
                 const std::string& crf_prefix) {
+                 py::gil_scoped_release rel;
                  new (&ana) ngram_pos_analyzer(n, ts.clone(), crf_prefix);
              })
         .def("analyze", &ngram_analyze<ngram_pos_analyzer, uint64_t>)
@@ -442,6 +443,7 @@ void metapy_bind_analyzers(py::module& m)
              [](tree_analyzer& ana, const token_stream& ts,
                 const std::string& tagger_prefix,
                 const std::string& parser_prefix) {
+                 py::gil_scoped_release rel;
                  new (&ana)
                      tree_analyzer(ts.clone(), tagger_prefix, parser_prefix);
              })
@@ -452,6 +454,7 @@ void metapy_bind_analyzers(py::module& m)
     py::class_<multi_analyzer>{m_ana, "MultiAnalyzer", analyzer_base};
 
     m_ana.def("load", [](const std::string& filename) {
+        py::gil_scoped_release rel;
         auto config = cpptoml::parse_file(filename);
         return analyzers::load(*config);
     });
