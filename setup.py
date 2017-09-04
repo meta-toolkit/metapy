@@ -94,7 +94,7 @@ class CMakeBuildExt(build.build):
             # copy over mman-win32 DLL on Windows
             if platform.system() == 'Windows':
                 dll = 'libmeta-mman-win32.dll'
-                shutil.copyfile(os.path.join(dirpath, 'lib', dll),
+                shutil.copyfile(os.path.join(dirpath, dll),
                                 os.path.join(src_dir, 'dist', 'metapy', dll))
 
         # Make dummy __init__.py
