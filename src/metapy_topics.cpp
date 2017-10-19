@@ -163,7 +163,8 @@ void metapy_bind_topics(py::module& m)
         .def("term_probability", &topics::topic_model::term_probability)
         .def("topic_probability", &topics::topic_model::topic_probability)
         .def("num_topics", &topics::topic_model::num_topics)
-        .def("num_words", &topics::topic_model::num_words);
+        .def("num_words", &topics::topic_model::num_words)
+        .def("num_docs", &topics::topic_model::num_docs);
 
     m_topics.def("load_topic_model", [](const std::string& config_path) {
         py::gil_scoped_release release;
