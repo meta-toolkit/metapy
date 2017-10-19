@@ -110,12 +110,10 @@ void metapy_bind_learn(py::module& m)
             return ss.str();
         });
 
-    m_learn.def("dot",
-                &util::dot_product<const learn::feature_vector&,
-                                   const learn::feature_vector&>);
-    m_learn.def("cosine",
-                &util::cosine_sim<const learn::feature_vector&,
-                                  const learn::feature_vector&>);
+    m_learn.def("dot", &util::dot_product<const learn::feature_vector&,
+                                          const learn::feature_vector&>);
+    m_learn.def("cosine", &util::cosine_sim<const learn::feature_vector&,
+                                            const learn::feature_vector&>);
     m_learn.def("l2norm", [](const learn::feature_vector& vec) {
         return util::l2norm(vec);
     });
