@@ -60,6 +60,7 @@ void metapy_bind_learn(py::module& m)
     py::class_<learn::feature_vector>{m_learn, "FeatureVector"}
         .def(py::init<>())
         .def(py::init<uint64_t>())
+        .def(py::init<const learn::feature_vector&>())
         .def("__init__",
              [](learn::feature_vector& fv, py::iterable& iter) {
                  using pair_type = learn::feature_vector::pair_type;
