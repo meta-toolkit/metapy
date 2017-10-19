@@ -140,6 +140,16 @@ void metapy_bind_learn(py::module& m)
                  py::gil_scoped_release release;
                  new (&dset) learn::dataset(fidx, docs);
              })
+        .def("__init__",
+             [](learn::dataset& dset, py::list& data,
+                std::size_t total_features, py::function& featurizer) {
+                 new (&dset)
+                     learn::dataset(data.begin(), data.end(), total_features,
+                                    [&](py::handle obj) {
+                                        return py::cast<learn::feature_vector>(
+                                            featurizer(obj));
+                                    });
+             })
         .def("__getitem__",
              [](learn::dataset& dset, int64_t offset) -> learn::instance& {
                  std::size_t idx = offset >= 0

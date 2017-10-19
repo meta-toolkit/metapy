@@ -176,6 +176,20 @@ void metapy_bind_classify(py::module& m)
                  py::gil_scoped_release release;
                  new (&dset) classify::binary_dataset(fidx, docs, labeler);
              })
+        .def("__init__",
+             [](classify::binary_dataset& dset, py::list& data,
+                std::size_t total_features, py::function& featurizer,
+                py::function& labeler) {
+                 new (&dset) classify::binary_dataset(
+                     data.begin(), data.end(), total_features,
+                     [&](py::handle obj) {
+                         return py::cast<learn::feature_vector>(
+                             featurizer(obj));
+                     },
+                     [&](py::handle obj) {
+                         return py::cast<bool>(labeler(obj));
+                     });
+             })
         .def("label", &classify::binary_dataset::label)
         .def("__getitem__",
              [](const classify::binary_dataset& dset, int64_t offset) {
@@ -220,20 +234,32 @@ void metapy_bind_classify(py::module& m)
     py::class_<classify::multiclass_dataset>{m_classify, "MulticlassDataset",
                                              pydset}
         .def("__init__",
-            [](classify::multiclass_dataset& dset,
-              const std::shared_ptr<index::forward_index>& fidx)
-            {
-              py::gil_scoped_release release;
-              new (&dset) classify::multiclass_dataset(fidx);
-            })
+             [](classify::multiclass_dataset& dset,
+                const std::shared_ptr<index::forward_index>& fidx) {
+                 py::gil_scoped_release release;
+                 new (&dset) classify::multiclass_dataset(fidx);
+             })
         .def("__init__",
-            [](classify::multiclass_dataset& dset,
-              const std::shared_ptr<index::forward_index>& fidx,
-              const std::vector<doc_id>& docs)
-            {
-              py::gil_scoped_release release;
-              new (&dset) classify::multiclass_dataset(fidx, docs);
-            })
+             [](classify::multiclass_dataset& dset,
+                const std::shared_ptr<index::forward_index>& fidx,
+                const std::vector<doc_id>& docs) {
+                 py::gil_scoped_release release;
+                 new (&dset) classify::multiclass_dataset(fidx, docs);
+             })
+        .def("__init__",
+             [](classify::multiclass_dataset& dset, py::list& data,
+                std::size_t total_features, py::function& featurizer,
+                py::function& labeler) {
+                 new (&dset) classify::multiclass_dataset(
+                     data.begin(), data.end(), total_features,
+                     [&](py::handle obj) {
+                         return py::cast<learn::feature_vector>(
+                             featurizer(obj));
+                     },
+                     [&](py::handle obj) {
+                         return py::cast<class_label>(labeler(obj));
+                     });
+             })
         .def("label",
              [](const classify::multiclass_dataset& dset,
                 const learn::instance& inst) { return dset.label(inst); })
