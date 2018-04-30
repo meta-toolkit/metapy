@@ -61,6 +61,14 @@ void metapy_bind_topics(py::module& m)
              })
         .def("num_topics", &topics::lda_model::num_topics);
 
+    py::class_<topics::inferencer>{m_topics, "LDAInferencer"}
+        .def("term_distribution",
+             [](const topics::inferencer& inf, topic_id k) {
+                 return py_multinomial{inf.term_distribution(k)};
+             },
+             py::arg("k"))
+        .def("num_topics", &topics::inferencer::num_topics);
+
     py::class_<topics::lda_cvb, topics::lda_model>{m_topics, "LDACollapsedVB"}
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
              py::keep_alive<0, 1>(), py::arg("docs"), py::arg("num_topics"),
@@ -71,6 +79,31 @@ void metapy_bind_topics(py::module& m)
                  lda.run(num_iters, convergence);
              },
              py::arg("num_iters"), py::arg("convergence") = 1e-3);
+
+    py::class_<topics::lda_cvb::inferencer, topics::inferencer>{m_topics,
+                                                                "CVBInferencer"}
+        .def("__init__",
+             [](topics::inferencer& inf, const std::string& cfgfile) {
+                 py::gil_scoped_release release;
+                 auto config = cpptoml::parse_file(cfgfile);
+                 new (&inf) topics::inferencer(*config);
+             },
+             py::arg("cfg_file"))
+        .def("__init__",
+             [](topics::inferencer& inf, const std::string& topicsfile,
+                double alpha) {
+                 py::gil_scoped_release release;
+                 std::ifstream topics_stream{topicsfile};
+                 new (&inf) topics::inferencer(topics_stream, alpha);
+             },
+             py::arg("topics_file"), py::arg("alpha"))
+        .def("infer",
+             [](const topics::lda_cvb::inferencer& inf,
+                const learn::feature_vector& doc, std::size_t max_iters,
+                double convergence) {
+                 return py_multinomial{inf(doc, max_iters, convergence)};
+             },
+             py::arg("doc"), py::arg("max_iters"), py::arg("convergence"));
 
     py::class_<topics::lda_gibbs, topics::lda_model>{m_topics, "LDAGibbs"}
         .def(py::init<const learn::dataset&, std::size_t, double, double>(),
@@ -83,6 +116,31 @@ void metapy_bind_topics(py::module& m)
                 lda.run(num_iters, convergence);
             },
             py::arg("num_iters"), py::arg("convergence") = 1e-6);
+
+    py::class_<topics::lda_gibbs::inferencer, topics::inferencer>{
+        m_topics, "GibbsInferencer"}
+        .def("__init__",
+             [](topics::inferencer& inf, const std::string& cfgfile) {
+                 auto config = cpptoml::parse_file(cfgfile);
+                 new (&inf) topics::inferencer(*config);
+             },
+             py::arg("cfg_file"))
+        .def("__init__",
+             [](topics::inferencer& inf, const std::string& topicsfile,
+                double alpha) {
+                 std::ifstream topics_stream{topicsfile};
+                 new (&inf) topics::inferencer(topics_stream, alpha);
+             },
+             py::arg("topics_file"), py::arg("alpha"))
+
+        .def("infer",
+             [](const topics::lda_gibbs::inferencer& inf,
+                const learn::feature_vector& doc, std::size_t num_iters,
+                std::size_t seed) {
+                 random::xoroshiro128 rng{seed};
+                 return py_multinomial{inf(doc, num_iters, rng)};
+             },
+             py::arg("doc"), py::arg("max_iters"), py::arg("rng_seed"));
 
     py::class_<topics::parallel_lda_gibbs, topics::lda_gibbs>{
         m_topics, "LDAParallelGibbs"}
@@ -127,8 +185,10 @@ void metapy_bind_topics(py::module& m)
 
                  new (&model) topics::topic_model(theta, phi);
              })
-        .def("top_k", [](const topics::topic_model& model, topic_id tid,
-                         std::size_t k) { return model.top_k(tid, k); },
+        .def("top_k",
+             [](const topics::topic_model& model, topic_id tid, std::size_t k) {
+                 return model.top_k(tid, k);
+             },
              py::arg("tid"), py::arg("k") = 10)
         .def("top_k",
              [](const topics::topic_model& model, topic_id tid, std::size_t k,
