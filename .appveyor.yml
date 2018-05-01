@@ -37,8 +37,7 @@ install:
     - bash -lc "wget http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-cmake-3.8.2-2-any.pkg.tar.xz"
     - bash -lc "pacman --noconfirm -U mingw-w64-x86_64-cmake-3.8.2-2-any.pkg.tar.xz"
     - python --version
-    - pip install --disable-pip-version-check --user --upgrade pip
-    - pip install wheel
+    - python -m pip install --upgrade pip wheel
     # Python 3.3 and 3.4 on Windows don't seem to come with a libpython33.a
     # or libpython34.a, so we need to generate one if it doesn't exist
     - bash -lc "if [ ! -f $PYTHON_PATH/libs/libpython$PYTHON_VERSION.a ]; then cd $PYTHON_PATH/libs && gendef /c/windows/system32/python$PYTHON_VERSION.dll && dlltool --as-flags=--64 -m i386:x86-64 -k --output-lib libpython$PYTHON_VERSION.a --input-def python$PYTHON_VERSION.def; fi"
@@ -46,7 +45,7 @@ before_build:
     - cd %APPVEYOR_BUILD_FOLDER%
     - git submodule update --init --recursive
 build_script:
-    - bash -lc "export PATH=/mingw64/bin:$PATH && cd $APPVEYOR_BUILD_FOLDER && pip wheel -w dist --verbose ./"
+    - bash -lc "export PATH=/mingw64/bin:$PATH && cd $APPVEYOR_BUILD_FOLDER && python -m pip wheel -w dist --verbose ./"
 deploy:
     description: 'metapy $(APPVEYOR_REPO_TAG_NAME)'
     provider: GitHub
