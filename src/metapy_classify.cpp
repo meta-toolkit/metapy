@@ -202,7 +202,6 @@ void metapy_bind_classify(py::module& m)
              })
         .def("__getitem__",
              [](const classify::binary_dataset& bdset, py::slice slice) {
-                 py::print("bindset.__getitem__");
                  classify::binary_dataset_view bdv{bdset};
                  return make_sliced_dataset_view(bdv, slice);
              },
