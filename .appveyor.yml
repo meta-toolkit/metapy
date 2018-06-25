@@ -39,7 +39,7 @@ before_build:
 build_script:
     - set PATH=C:\msys64\mingw64\bin;%PATH%
     - cd %APPVEYOR_BUILD_FOLDER%
-    - %PYTHON_PATH%\python -m pip wheel -w dist --verbose ./
+    - '%PYTHON_PATH%\python -m pip wheel -w dist --verbose ./'
 deploy:
     description: 'metapy $(APPVEYOR_REPO_TAG_NAME)'
     provider: GitHub
