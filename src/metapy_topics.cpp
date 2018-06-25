@@ -121,6 +121,7 @@ void metapy_bind_topics(py::module& m)
         m_topics, "GibbsInferencer"}
         .def("__init__",
              [](topics::inferencer& inf, const std::string& cfgfile) {
+                 py::gil_scoped_release release;
                  auto config = cpptoml::parse_file(cfgfile);
                  new (&inf) topics::inferencer(*config);
              },
@@ -128,6 +129,7 @@ void metapy_bind_topics(py::module& m)
         .def("__init__",
              [](topics::inferencer& inf, const std::string& topicsfile,
                 double alpha) {
+                 py::gil_scoped_release release;
                  std::ifstream topics_stream{topicsfile};
                  new (&inf) topics::inferencer(topics_stream, alpha);
              },
