@@ -8,8 +8,6 @@ environment:
     matrix:
         - PYTHON_PATH: C:/Python27-x64
           PYTHON_VERSION: 27
-        - PYTHON_PATH: C:/Python33-x64
-          PYTHON_VERSION: 33
         - PYTHON_PATH: C:/Python34-x64
           PYTHON_VERSION: 34
         - PYTHON_PATH: C:/Python35-x64

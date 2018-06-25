@@ -10,11 +10,6 @@ matrix:
       env: VERSION=2.7.11
 
     - os: osx
-      env: VERSION=3.3.5
-      # OSX 10.11 doesn't work with the MacPython 3.3 installer
-      osx_image: xcode6.4
-
-    - os: osx
       env: VERSION=3.4.4
 
     - os: osx
@@ -30,9 +25,6 @@ matrix:
       env:
         - VERSION=2.7
         - UNICODE_WIDTH=16
-
-    - os: linux
-      env: VERSION=3.3
 
     - os: linux
       env: VERSION=3.4
