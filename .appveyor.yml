@@ -37,7 +37,9 @@ before_build:
     - cd %APPVEYOR_BUILD_FOLDER%
     - git submodule update --init --recursive
 build_script:
-    - bash -lc "export PATH=/mingw64/bin:$PATH && cd $APPVEYOR_BUILD_FOLDER && python -m pip wheel -w dist --verbose ./"
+    - set PATH=C:\msys64\mingw64\bin;%PATH%
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - %PYTHON_PATH%\python -m pip wheel -w dist --verbose ./
 deploy:
     description: 'metapy $(APPVEYOR_REPO_TAG_NAME)'
     provider: GitHub

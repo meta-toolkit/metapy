@@ -66,12 +66,15 @@ class CMakeBuildExt(build.build):
 
         py_version = "{}.{}".format(sys.version_info[0], sys.version_info[1])
         cmake_cmd = [cmake_exe, src_dir, "-DCMAKE_BUILD_TYPE=Release",
-                     "-DMETA_STATIC_UTF=On"]
+                     "-DMETA_STATIC_UTF=On", "-DBUILD_STATIC_ICU=On"]
 
+        cmake_cmd.append("-DPYTHON_INCLUDE_DIRS={}".format(sysconfig.get_python_inc()))
         if platform.system() == 'Windows':
-            cmake_cmd.append("-DMETAPY_PYTHON_VERSION={}".format(py_version))
-        else:
-            cmake_cmd.append("-DPYTHON_INCLUDE_DIRS={}".format(sysconfig.get_python_inc()))
+            libpython = "libpython{}{}.a".format(sys.version_info[0],
+                                                 sys.version_info[1])
+            libpython_path = os.path.join(sysconfig.get_python_inc(),
+                                          '..', 'libs', libpython)
+            cmake_cmd.append("-DPYTHON_LIBRARY={}".format(libpython_path))
 
         if self.icu_root:
             cmake_cmd.extend(["-DICU_ROOT={}".format(self.icu_root)])
