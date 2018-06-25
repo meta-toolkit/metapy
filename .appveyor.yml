@@ -30,12 +30,6 @@ install:
     # we don't actually need ada, fortran, libgfortran, or objc, but in
     # order to update gcc we need to also update those packages as well...
     - bash -lc "pacman --noconfirm -S mingw-w64-x86_64-{gcc,gcc-ada,gcc-fortran,gcc-libgfortran,gcc-objc,cmake,make,zlib}"
-    # as of 2017-08-16, msys2's cmake does broken things when linking
-    # executables leading to segfaults during indexing. The bug is
-    # introduced in cmake 3.9.1-1, so we manually downgrade to cmake
-    # 3.8.2-2 here.
-    - bash -lc "wget http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-cmake-3.8.2-2-any.pkg.tar.xz"
-    - bash -lc "pacman --noconfirm -U mingw-w64-x86_64-cmake-3.8.2-2-any.pkg.tar.xz"
     - python --version
     - python -m pip install --upgrade pip wheel
     # Python 3.3 and 3.4 on Windows don't seem to come with a libpython33.a
