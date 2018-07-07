@@ -2,6 +2,7 @@
 brew update
 brew outdated cmake || brew upgrade cmake
 git clone --recursive https://github.com/MacPython/terryfy
-source terryfy/travis_tools.sh
-get_python_environment macpython $VERSION venv
+git clone https://github.com/matthew-brett/multibuild
+source multibuild/osx_utils.sh
+get_macpython_environment $VERSION venv
 pip install wheel
