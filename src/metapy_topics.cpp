@@ -93,7 +93,7 @@ void metapy_bind_topics(py::module& m)
              [](topics::inferencer& inf, const std::string& topicsfile,
                 double alpha) {
                  py::gil_scoped_release release;
-                 std::ifstream topics_stream{topicsfile};
+                 std::ifstream topics_stream{topicsfile, std::ios::binary};
                  new (&inf) topics::inferencer(topics_stream, alpha);
              },
              py::arg("topics_file"), py::arg("alpha"))
@@ -130,7 +130,7 @@ void metapy_bind_topics(py::module& m)
              [](topics::inferencer& inf, const std::string& topicsfile,
                 double alpha) {
                  py::gil_scoped_release release;
-                 std::ifstream topics_stream{topicsfile};
+                 std::ifstream topics_stream{topicsfile, std::ios::binary};
                  new (&inf) topics::inferencer(topics_stream, alpha);
              },
              py::arg("topics_file"), py::arg("alpha"))
