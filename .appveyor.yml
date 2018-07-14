@@ -14,6 +14,8 @@ environment:
           PYTHON_VERSION: 35
         - PYTHON_PATH: C:/Python36-x64
           PYTHON_VERSION: 36
+        - PYTHON_PATH: C:/Python37-x64
+          PYTHON_VERSION: 37
 
 artifacts:
     - path: 'dist\*.whl'
