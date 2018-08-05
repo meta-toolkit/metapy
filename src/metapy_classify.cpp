@@ -299,6 +299,14 @@ void metapy_bind_classify(py::module& m)
                  return make_sliced_dataset_view(mdv, slice);
              },
              py::keep_alive<0, 1>())
+        .def("total_labels", &classify::multiclass_dataset_view::total_labels)
+        .def("label", &classify::multiclass_dataset_view::label)
+        .def("labels",
+             [](const classify::multiclass_dataset_view& self) {
+                 return py::make_iterator(self.labels_begin(),
+                                          self.labels_end());
+             },
+             py::keep_alive<0, 1>())
         .def("create_even_split",
              [](const classify::multiclass_dataset_view& mdv) {
                  return mdv.create_even_split();
