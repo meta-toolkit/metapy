@@ -8,37 +8,7 @@ matrix:
   include:
     - os: osx
       osx_image: xcode13.4
-      env: VERSION=2.7.11
-
-    - os: osx
-      osx_image: xcode13.4
-      env: VERSION=3.4.4
-
-    - os: osx
-      osx_image: xcode13.4
-      env: VERSION=3.5.1
-
-    - os: osx
-      osx_image: xcode13.4
-      env: VERSION=3.6.0
-
-    - os: osx
-      osx_image: xcode13.4
-      env: VERSION=3.7.0
-
-    - os: linux
-      env: VERSION=2.7
-
-    - os: linux
-      env:
-        - VERSION=2.7
-        - UNICODE_WIDTH=16
-
-    - os: linux
-      env: VERSION=3.5
-
-    - os: linux
-      env: VERSION=3.6
+      env: VERSION=3.7
 
     - os: linux
       env: VERSION=3.7
