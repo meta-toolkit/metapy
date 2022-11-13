@@ -39,13 +39,13 @@ script:
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then source travis/build_linux.sh; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then source travis/build_osx.sh; fi
 
-deploy:
-  provider: releases
-  api_key:
-    secure: FBmxUWVS+JJJTYBXZdDKEQX0zvdjXwor1nhYFas9DAwoq5Z2PllV610arqjP2vdmJdsQTNv6/sGswf36tfCwERDOqFnZE4Dh0MlhUVIBzMdDBiA2I/5n+r0MCbkQPO9ZdPVY9JCNIx6mUIH0k/dcJac4ADEeOq6ANk8APhL+f8aqwr0a7Fo82qKqBXbqDXoW74R6jxRS/Jiba/jD4VsIeVlWszIAiSk9/UE8MGOPt4zvfsg+sW3XOqfckO+jfFJIJXTB+wIbc8RwUP4Qrgh+1vUFCVtq52Bxf+8eKJxCJOpLpGOjUaIfzL9BbKKuDP84g3YxAEEv5MK/6eZEmqtH1OCNIx8x9i1f22lhtVBxhRlqSKNrNzFooWbXE+IUF34Xkbcq3LzkAm4MJVP1cq5+JEm2dOBh1FzUhYGCEPeRM59S6geVX5whUGSP+zrp7ZVq0lRmaZQd9Z+9BWZGSDO3Y3ApmVArDcfT8jboTZ0/gHHEoKpy6th7DcwcPcXg1rUihRf3lRRwWTwG2rLMqeddlurXXELzrPmKvCPwZKREZw6gNd1J5URFtbYfXXcOvAzPpLvN7EJopQO8G/roogh5QcpNFbf871LPNhymI8jasYVlsujR/aFx0KJbcmK9m6gAzhljbPwaldJig0YR00jDNd2/zfn8l3VTcIPKH71SkFY=
-  file: dist/*.whl
-  file_glob: true
-  skip_cleanup: true
-  on:
-    tags: true
-    repo: meta-toolkit/metapy
+# deploy:
+#   provider: releases
+#   api_key:
+#     secure: FBmxUWVS+JJJTYBXZdDKEQX0zvdjXwor1nhYFas9DAwoq5Z2PllV610arqjP2vdmJdsQTNv6/sGswf36tfCwERDOqFnZE4Dh0MlhUVIBzMdDBiA2I/5n+r0MCbkQPO9ZdPVY9JCNIx6mUIH0k/dcJac4ADEeOq6ANk8APhL+f8aqwr0a7Fo82qKqBXbqDXoW74R6jxRS/Jiba/jD4VsIeVlWszIAiSk9/UE8MGOPt4zvfsg+sW3XOqfckO+jfFJIJXTB+wIbc8RwUP4Qrgh+1vUFCVtq52Bxf+8eKJxCJOpLpGOjUaIfzL9BbKKuDP84g3YxAEEv5MK/6eZEmqtH1OCNIx8x9i1f22lhtVBxhRlqSKNrNzFooWbXE+IUF34Xkbcq3LzkAm4MJVP1cq5+JEm2dOBh1FzUhYGCEPeRM59S6geVX5whUGSP+zrp7ZVq0lRmaZQd9Z+9BWZGSDO3Y3ApmVArDcfT8jboTZ0/gHHEoKpy6th7DcwcPcXg1rUihRf3lRRwWTwG2rLMqeddlurXXELzrPmKvCPwZKREZw6gNd1J5URFtbYfXXcOvAzPpLvN7EJopQO8G/roogh5QcpNFbf871LPNhymI8jasYVlsujR/aFx0KJbcmK9m6gAzhljbPwaldJig0YR00jDNd2/zfn8l3VTcIPKH71SkFY=
+#   file: dist/*.whl
+#   file_glob: true
+#   skip_cleanup: true
+#   on:
+#     tags: true
+#     repo: meta-toolkit/metapy
