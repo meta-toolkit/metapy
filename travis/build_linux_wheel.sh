@@ -10,10 +10,10 @@ curl -L https://www.cmake.org/files/v3.2/cmake-3.2.0-Linux-x86_64.sh --output cm
 sh cmake-3.2.0-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
 
 # Install zlib
-yum install -y zlib-devel
+apt install -y zlib1g-dev
 
 # Install LibLZMA
-yum install -y xz-devel
+apt install -y liblzma5
 
 # taken from https://github.com/matthew-brett/manylinux-builds/blob/master/common_vars.sh
 function lex_ver {
