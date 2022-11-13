@@ -6,11 +6,14 @@ set -eo pipefail
 UNICODE_WIDTH="${UNICODE_WIDTH:-32}"
 
 # Install cmake
-wget --no-check-certificate http://www.cmake.org/files/v3.2/cmake-3.2.0-Linux-x86_64.sh
+curl -L https://www.cmake.org/files/v3.2/cmake-3.2.0-Linux-x86_64.sh --output cmake-3.2.0-Linux-x86_64.sh
 sh cmake-3.2.0-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
 
 # Install zlib
 yum install -y zlib-devel
+
+# Install LibLZMA
+yum install -y xz-devel
 
 # taken from https://github.com/matthew-brett/manylinux-builds/blob/master/common_vars.sh
 function lex_ver {
