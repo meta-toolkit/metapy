@@ -10,4 +10,5 @@ export CPPFLAGS="-isysroot ${CLANG_SYSROOT}"
 
 pip wheel -w dist --verbose ./
 ls dist/*.whl
-pip install dist/*.whl
+# TODO figure out why this is not working when it's not a cross-platform build
+#pip install dist/*.whl
