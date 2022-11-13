@@ -8,7 +8,14 @@ export CFLAGS="-isysroot ${CLANG_SYSROOT}"
 export CXXFLAGS="-isysroot ${CLANG_SYSROOT}"
 export CPPFLAGS="-isysroot ${CLANG_SYSROOT}"
 
+# We want to set the minimum target to macOS 11 (~= 10.16, Big Sur)
+# to account for very old Pythons that don't know about anything newer.
+# For example, the default Python 3.7 that this tooling installs is Python 3.7.9
+# and that doesn't understand anything after 10.X. That sets the minimum
+# floor for Python version to 3.7 and macOS verion to 11, but there is good
+# coverage in the original project for anything older: we'll just concentrate on newer.
+export MACOSX_DEPLOYMENT_TARGET=10.16
+
 pip wheel -w dist --verbose ./
 ls dist/*.whl
-# TODO figure out why this is not working when it's not a cross-platform build
-#pip install dist/*.whl
+pip install dist/*.whl
