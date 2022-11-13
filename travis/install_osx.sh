@@ -1,4 +1,8 @@
 #!/bin/bash
+python3 -V
+ln -s /usr/local/bin/python3 /usr/local/bin/python
+export PATH=$PATH:/usr/local/bin
+python -V
 brew update
 brew outdated cmake || brew upgrade cmake
 git clone --recursive https://github.com/MacPython/terryfy
