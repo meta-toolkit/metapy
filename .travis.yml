@@ -9,9 +9,29 @@ matrix:
     - os: osx
       osx_image: xcode13.4
       env: VERSION=3.7
+    - os: osx
+      osx_image: xcode13.4
+      env: VERSION=3.8
+    - os: osx
+      osx_image: xcode13.4
+      env: VERSION=3.8
+    - os: osx
+      osx_image: xcode13.4
+      env: VERSION=3.10
+    - os: osx
+      osx_image: xcode13.4
+      env: VERSION=3.11
 
     - os: linux
       env: VERSION=3.7
+    - os: linux
+      env: VERSION=3.8
+    - os: linux
+      env: VERSION=3.9
+    - os: linux
+      env: VERSION=3.10
+    - os: linux
+      env: VERSION=3.11
 
 install:
   - git submodule update --init --recursive
