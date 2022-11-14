@@ -27,8 +27,6 @@ matrix:
       env: VERSION=3.9
     - os: linux
       env: VERSION=3.10
-    - os: linux
-      env: VERSION=3.11
 
 install:
   - git submodule update --init --recursive
