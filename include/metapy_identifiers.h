@@ -24,7 +24,7 @@ struct identifier_caster
     using underlying_type = typename Type::underlying_type;
     using type_conv = make_caster<underlying_type>;
 
-    PYBIND11_TYPE_CASTER(Type, _("id[") + type_conv::name() + _("]"));
+    PYBIND11_TYPE_CASTER(Type, _("id[") + type_conv::name + _("]"));
 
     bool load(handle src, bool convert)
     {

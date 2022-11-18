@@ -41,7 +41,7 @@ void metapy_bind_embeddings(py::module& m)
                     query,
                 std::size_t k) {
                  util::array_view<const double> avquery{query.data(),
-                                                        query.size()};
+                                                        static_cast<std::size_t>(query.size())};
                  auto scores = self.top_k(avquery, k);
 
                  std::vector<py::tuple> result;

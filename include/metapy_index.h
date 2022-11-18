@@ -56,10 +56,7 @@ struct type_caster<meta::index::search_result>
         return result.release();
     }
 
-    static PYBIND11_DESCR name()
-    {
-        return type_descr(_("SearchResult"));
-    }
+    static constexpr auto name = _("SearchResult");
 
     static handle cast(const meta::index::search_result* sr,
                        return_value_policy policy, handle parent)
